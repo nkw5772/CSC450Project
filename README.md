@@ -1,3 +1,4 @@
-# CSC450Project
+# CSC450Project Libraries
 
-## Libraries Used
+## Pyodbc
+python -m pip install pyodbc
