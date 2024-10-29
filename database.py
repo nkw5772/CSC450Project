@@ -1,12 +1,10 @@
-import pyodbc
+import mysql.connector
 
-connection = pyodbc.connect("Driver={SQL Server};\
-                            Server=LAPTOP-FAI3GTFD;\
-                            Database=Project;\
-                            Trusted_Connection=yes;"
+mydb = mysql.connector.connect(
+    host="PLACEHOLDER",
+    user="PLACEHOLDER",
+    password="PLACEHOLDER",
+    database="PLACEHOLDER"
 )
 
-cursor = connection.cursor()
-cursor.execute("Select * from Reservations")
-for row in cursor.fetchall():
-    print(row)
+mycursor = mydb.cursor()
