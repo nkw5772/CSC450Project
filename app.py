@@ -13,14 +13,6 @@ def login():
     return render_template('login.html')
 
 
-
-
-
-
-
-
-
-
 # # Define the route to handle login form submission
 # @app.route('/login', methods=['POST'])
 # def login():
