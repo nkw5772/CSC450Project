@@ -4,7 +4,7 @@ mydb = mysql.connector.connect(
     host="PLACEHOLDER",
     user="PLACEHOLDER",
     password="PLACEHOLDER",
-    database="PLACEHOLDER"
+    database="CSC450Inventory"
 )
 
 mycursor = mydb.cursor()
