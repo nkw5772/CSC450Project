@@ -24,12 +24,21 @@ def tryCreateAccount():
     email = request.form.get('email')
     phone_number = request.form.get('phone')
     password_hash = sha256(request.form.get('password').encode('utf-8')).hexdigest()
-    password_confirm_hash = sha256(request.form.get('confirm_password').encode('utf-8')).hexdigest()
+    confirm_password_hash = sha256(request.form.get('confirm_password').encode('utf-8')).hexdigest()
 
-    if (password_hash != password_confirm_hash):
+    # if email is not unique:
+        # FAIL
+    
+    # if phone_number is not unique:
+        # FAIL
+
+    if password_hash != confirm_password_hash:
         # Fix this fr?
         print("PASSWORDS DO NOT MATCH")
         return render_template('home.html')
+    
+    # if all the checks pass, then create a database entry for new user
+    pass
     
 # # Define the route to handle login form submission
 # @app.route('/login', methods=['POST'])
