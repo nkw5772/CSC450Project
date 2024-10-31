@@ -18,6 +18,11 @@ add_account_command = ("INSERT INTO Accounts (AccountFN, AccountLN, AccountType,
 
 account_data = ("Jude", "Vargas", "Employee", "jrv4914@uncw.edu", "3143243173", "2024-10-30", "7e1271b650ade8c137425097c5d4268792cfef57503cf1b21fe21171045f3994")
 
+login_query = ("SELECT AccountEmail, PasswordHash FROM Accounts WHERE AccountEmail = %s")
+
+for (account_email, password_hash) in mycursor:
+    print(account_email, password_hash)
+
 try:
     mycursor.execute(add_account_command, account_data)
     mydb.commit()
