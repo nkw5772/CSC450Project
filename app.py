@@ -44,7 +44,7 @@ def tryCreateAccount():
     # if email is not unique:
         # FAIL
 
-def tryCreateAccount():
+
     # if phone_number is not unique:
         # FAIL
     # @@ -32,14 +36,11 @@ 
