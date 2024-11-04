@@ -28,6 +28,10 @@ def index():
     # If it's a GET request, render the login page
     return render_template('login.html')
 
+@app.route("/home")
+def home():
+    return render_template('home.html')
+
 @app.route("/createAccount")
 def createAccount():
     return render_template('createAccount.html')
