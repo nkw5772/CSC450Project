@@ -90,13 +90,16 @@
         a:hover {
                 text-decoration: underline;
         }
+        .error_message {
+                color: red;
+        }
     </style>
 </head>
 <body>
     <div class="form-container">
         <h2>Create Account</h2>
         
-        <form action="/submit-form" method="POST" class="form-grid">
+        <form action="/createAccount" method="POST" class="form-grid">
             <!-- First Name and Last Name in two columns -->
             <div>
                 <label for="first-name">First Name:</label>
@@ -114,7 +117,8 @@
             </div>
             <div>
                 <label for="phone">Phone Number:</label>
-                <input type="tel" id="phone" name="phone" pattern="[0-9]{10}" placeholder="1234567890" required>
+                <input type="tel" id="phone" name="phone" pattern="^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$" placeholder="1234567890" required>
+                <!-- Phone number regex: https://stackoverflow.com/a/16699507 -->
                 <!-- <small>Format: 1234567890</small> -->
             </div>
 
@@ -131,6 +135,14 @@
             <!-- Submit Button spans both columns -->
             <div class="full-width">
                 <button type="submit">Create Account</button>
+                <ul>
+                    {%for error in error_messages%}
+                        <li class="error_message">{{error}}</li>
+                    {%endfor%}                    
+                </ul>
+                {%if error_messages%}
+                    <p class="error_message">Please try again.</p>
+                {%endif%}
                 <p style="text-align: center;">Already have an account? <a href="/">Sign in here</a></p>
             </div>
         </form>

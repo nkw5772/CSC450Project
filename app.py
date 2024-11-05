@@ -32,45 +32,36 @@ def index():
 def home():
     return render_template('home.html')
 
-@app.route("/createAccount")
+@app.route("/createAccount", methods=['GET', 'POST'])
 def createAccount():
+    if request.method == 'POST':
+        first_name = request.form.get('first_name')
+        last_name = request.form.get('last_name')
+        email = request.form.get('email')
+        phone_number = request.form.get('phone')
+        password_hash = sha256(request.form.get('password').encode('utf-8')).hexdigest()
+        confirm_password_hash = sha256(request.form.get('confirm_password').encode('utf-8')).hexdigest()
+
+        error_messages = []
+
+        # if email is not unique:
+            # error_messages.append('Email is already in use - please use a different email.')
+
+
+        # if phone_number is not unique:
+            # error_messages.append('Phone number is already in use - please use a different phone number.')
+
+        if password_hash != confirm_password_hash:
+            error_messages.append('Passwords do not match.')
+        
+        if error_messages:
+            return render_template('createAccount.html', error_messages=error_messages)
+        else:
+            # TODO: if all the checks pass, then create a database entry for new user
+            return redirect(url_for('home'))
+
+    # If it's a GET request, render the login page
     return render_template('createAccount.html')
-
-@app.route('/submit-form', methods=['POST'])
-def tryCreateAccount():
-    first_name = request.form.get('first_name')
-    last_name = request.form.get('last_name')
-    email = request.form.get('email')
-    phone_number = request.form.get('phone')
-    password_hash = sha256(request.form.get('password').encode('utf-8')).hexdigest()
-    confirm_password_hash = sha256(request.form.get('confirm_password').encode('utf-8')).hexdigest()
-
-    # if email is not unique:
-        # FAIL
-
-
-    # if phone_number is not unique:
-        # FAIL
-    # @@ -32,14 +36,11 @@ 
-    if password_hash != confirm_password_hash:
-        # Fix this fr?
-        print("PASSWORDS DO NOT MATCH")
-        return render_template('home.html')
-    
-    # if all the checks pass, then create a database entry for new user
-    pass
-    
-
-
-    # if email is not unique:
-        # FAIL
-    
-    # if phone_number is not unique:
-        # FAIL
-
-
-
-
 
 
 # # Define the route to handle login form submission
