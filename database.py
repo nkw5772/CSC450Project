@@ -1,6 +1,49 @@
 import mysql.connector
 import sqlite3
 
+class Database:
+    """
+    Helper class for database interactions
+    Life Pro Tip: single-value parameters still need to be in Tuple form, so assign a parameter value as (param_name,)
+    """
+
+    def __init__(self):
+        # Set up connection to database (cursor is used to interact with it)
+        try:
+            self.database = sqlite3.connect('restaurant.db')
+        except sqlite3.Error as error:
+            raise Exception('Was not able to establish a connection to the database.\n', error)
+        self.cursor = self.database.cursor()
+    
+    def __del__(self):
+        self.cursor.close()
+
+    def email_is_unique(self, email: str) -> bool:
+        command = "SELECT COUNT(*) FROM Account WHERE AccountEmail = ?"
+        params = (email,)
+        self.cursor.execute(command, params)
+        if self.cursor.fetchone()[0] <= 0: # Returns a tuple, so gotta index to get value
+            return True
+        return False
+        # Could also be done by (SELECT * FROM Account) & using cursor.rowcount - not sure which way is better
+
+    def phone_is_unique(self, phone: str) -> bool:
+        command = "SELECT COUNT(*) FROM Account WHERE AccountPhoneNo = ?"
+        params = (phone,)
+        self.cursor.execute(command, params)
+        if self.cursor.fetchone()[0] <= 0: # Returns a tuple, so gotta index to get value
+            return True
+        return False
+
+    def add_account(self, first_name: str, last_name: str, type: str, email: str, phone: str, created_date: str, password: str):
+        command = "INSERT INTO Account (AccountFN, AccountLN, AccountType, AccountEmail, AccountPhoneNo, AccountCreatedDate, PasswordHash) " \
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)"
+        params = (first_name, last_name, type, email, phone, created_date, password)
+        self.cursor.execute(command, params)
+        self.database.commit()
+
+
+
 # Keeping old code for if/when we switch back to MySQL
 '''
 mydb = mysql.connector.connect(
@@ -15,25 +58,6 @@ if mydb.is_connected():
 
 mycursor = mydb.cursor()
 '''
-
-# Set up connection to database (cursor is used to interact with it)
-database = sqlite3.connect('restaurant.db')
-cursor = database.cursor()
-
-# Command for adding account
-add_account_command = ("INSERT INTO Account (AccountFN, AccountLN, AccountType, AccountEmail, AccountPhoneNo, AccountCreatedDate, PasswordHash) " \
-                "VALUES (?, ?, ?, ?, ?, ?, ?)")
-account_data = ("Jude", "Vargas", "Employee", "jrv4914@uncw.edu", "3143243173", "2024-10-30", "7e1271b650ade8c137425097c5d4268792cfef57503cf1b21fe21171045f3994")
-
-login_query = ("SELECT AccountEmail, PasswordHash FROM Account WHERE AccountEmail = ?")
-login_data = ("jrv4914@uncw.edu",) # Query parameters need to be in the form of a tuple, so the comma at the end of this line is necessary
-
-cursor.execute(login_query, login_data)
-database.commit()
-print(cursor.fetchall())
-
-
-# More old code
 '''
 for (account_email, password_hash) in mycursor:
     print(account_email, password_hash)
@@ -45,9 +69,3 @@ try:
 except Exception as e:
     print("It fucked up.\n", e)
 '''
-
-# Close database connection when finished
-cursor.close()
-
-# Maybe add functions to call from app.py to abstract the process away from SQL statements
-# def add_account(first_name: str, last_name: str, etc):
