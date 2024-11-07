@@ -15,11 +15,11 @@ def index():
         db = helper.Database()
         # Get the form data
         username = request.form.get('username')
-        password = request.form.get('password')
-        # password_hash = sha256(request.form.get('password').encode('utf-8')).hexdigest()
+        # password = request.form.get('password')
+        password_hash = sha256(request.form.get('password').encode('utf-8')).hexdigest()
         
         # Check if the credentials are correct
-        if db.verify_login(username, password) == True: 
+        if db.verify_login(username, password_hash) == True: 
             return redirect(url_for('home'))
             # return render_template('home.html')
         else:
