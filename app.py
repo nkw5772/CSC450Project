@@ -1,15 +1,24 @@
 
-from flask import Flask, render_template, redirect, url_for, request
+from flask import Flask, render_template, redirect, url_for, request, jsonify
 from hashlib import sha256
 import database as helper
 from datetime import datetime
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
+limiter = Limiter(app)
 
+limiter = Limiter(
+    get_remote_address,  # This will use the user's IP to track rate limits
+    app=app,
+    default_limits=["5 per minute", ]  # Default limits for all routes
+)
 # Define the route for the login page
 # This page is the root page of the application
 # This will eventually query the database and check the credentials.
 @app.route('/', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def index():
     if request.method == 'POST':
         db = helper.Database()
@@ -70,7 +79,10 @@ def createAccount():
 
     # If it's a GET request, render the login page
     return render_template('createAccount.html')
-
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    error_message = "Too many login attempts. Please try again later"
+    return render_template('login.html', error_message=error_message)
 """
 # Define the route to handle login form submission
 @app.route('/login', methods=['POST'])
