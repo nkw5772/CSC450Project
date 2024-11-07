@@ -1,12 +1,13 @@
 
-from flask import Flask, render_template, redirect, url_for, request, jsonify
+from flask import Flask, render_template, redirect, url_for, request, jsonify, session
 from hashlib import sha256
 import database as helper
 from datetime import datetime
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-
+import time
 app = Flask(__name__)
+app.secret_key = "supersecretkey"  # Secret key for session management
 limiter = Limiter(app)
 
 limiter = Limiter(
@@ -20,6 +21,22 @@ limiter = Limiter(
 @app.route('/', methods=['GET', 'POST'])
 @limiter.limit("5 per minute")
 def index():
+    # Track login attempts using sessions
+    if 'login_attempts' not in session:
+        session['login_attempts'] = []
+
+    # Record the current timestamp for each attempt
+    current_time = time.time()
+    session['login_attempts'] = [t for t in session['login_attempts'] if current_time - t < 60]  # Keep only attempts within the last 60 seconds
+
+    # Check if the user has exceeded the limit
+    if len(session['login_attempts']) >= 5:
+        return jsonify({"error": "Too many login attempts. Please try again later."}), 429
+
+    # Add the current attempt timestamp
+    session['login_attempts'].append(current_time)
+    
+    #ACTUAL LOGIN LOGIC
     if request.method == 'POST':
         db = helper.Database()
         # Get the form data
