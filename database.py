@@ -41,8 +41,29 @@ class Database:
         params = (first_name, last_name, type, email, phone, created_date, password)
         self.cursor.execute(command, params)
         self.database.commit()
-
-
+    
+    # def verify_exists(self, email):
+    #     self.cursor.execute("SELECT PasswordHash FROM Account WHERE AccountEmail = ?", (email,))
+    
+    #     # Fetch the result
+    #     result = self.cursor.fetchone()
+    
+    #     # Check if the email exists in the database
+    #     if result is None:
+    #     # Email does not exist, return False
+    #         return False
+    
+    def verify_login(self, email, password):
+        
+        self.cursor.execute("SELECT PasswordHash FROM Account WHERE AccountEmail = ?", (email,))
+        
+        result = self.cursor.fetchone()
+        if result is None:
+            return False
+        if result[0] == password:
+            return True
+        return False
+        
 
 # Keeping old code for if/when we switch back to MySQL
 '''
