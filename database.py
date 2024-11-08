@@ -31,7 +31,7 @@ class Database:
         command = "SELECT COUNT(*) FROM Account WHERE AccountPhoneNo = ?"
         params = (phone,)
         self.cursor.execute(command, params)
-        if self.cursor.fetchone()[0] <= 0: # Returns a tuple, so gotta index to get value
+        if self.cursor.fetchone()[0] <= 0:
             return True
         return False
 

@@ -1,7 +1,7 @@
 
 from flask import Flask, render_template, redirect, url_for, request, jsonify, session
 from hashlib import sha256
-import database as helper
+from database import Database
 from datetime import datetime
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -39,7 +39,7 @@ def index():
     
     #ACTUAL LOGIN LOGIC
     if request.method == 'POST':
-        db = helper.Database()
+        db = Database()
         # Get the form data
         username = request.form.get('username')
         # password = request.form.get('password')
@@ -67,7 +67,7 @@ def home():
 @app.route("/createAccount.html", methods=['GET', 'POST']) # Not sure about this
 def createAccount():
     if request.method == 'POST':
-        db = helper.Database()
+        db = Database()
         
         first_name = request.form.get('first_name') # Should we hash this info as well?
         last_name = request.form.get('last_name')
@@ -92,8 +92,8 @@ def createAccount():
         else:
             today = datetime.today().strftime('%Y-%m-%d')
             db.add_account(first_name, last_name, 'Customer', email, phone_number, today, password_hash)
-            return render_template('home.html', message=f"Welcome {first_name}!") # I wanna be able to redirect with parameters (haven't researched much yet)
-            # return redirect(url_for('home'))
+            # return render_template('home.html', message=f"Welcome {first_name}!") # I wanna be able to redirect with parameters (haven't researched much yet)
+            return redirect(url_for('home', login_sucess=True))
 
     # If it's a GET request, render the login page
     return render_template('createAccount.html')
