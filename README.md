@@ -12,6 +12,10 @@ Run `pip install -r requirements.txt` in the root directory
 
 Used to connect to, query, and modify a MySQL database
 
+### Flask Limiter
+
+Used to set connection & query limits (prevents DDoS and stuff)
+
 ### Flask App
 
 Framework for hosting webpages dynamically generated using Python
