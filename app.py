@@ -1,5 +1,5 @@
 
-from flask import Flask, render_template, redirect, url_for, request, jsonify, session
+from flask import Flask, render_template, redirect, url_for, request, jsonify, session, make_response
 from hashlib import sha256
 from database import Database
 from datetime import datetime
@@ -21,7 +21,7 @@ limiter = Limiter(
 # This will eventually query the database and check the credentials.
 @app.route('/', methods=['GET', 'POST'])
 @limiter.limit("5 per minute")
-def index():
+def login():
     # Track login attempts using sessions
     if 'login_attempts' not in session:
         session['login_attempts'] = []
@@ -47,8 +47,10 @@ def index():
         
         # Check if the credentials are correct
         if db.verify_login(username, password_hash) == True: 
-            return redirect(url_for('home'))
-            # return render_template('home.html')
+            # Creakes a cookie for user when they login
+            resp = make_response(redirect(url_for('home')))
+            resp.set_cookie('username', username)
+            return resp
         else:
             # Show an error message if credentials are incorrect
             # return redirect(url_for('error'))
@@ -59,8 +61,19 @@ def index():
     # If it's a GET request, render the login page
     return render_template('login.html')
 
+@app.route("/logout")
+def logout():
+    # Deletes user's cookie and returns them to login page
+    resp = make_response(redirect(url_for('login')))
+    resp.delete_cookie('username')
+    return resp
+
 @app.route("/home")
 def home():
+    # Loads home if user is logged in, otherwise sends them back to login page
+    username = request.cookies.get('username')
+    if not username:
+        return redirect(url_for('login'))
     return render_template('home.html')
 
 @app.route("/createAccount", methods=['GET', 'POST'])
