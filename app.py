@@ -6,6 +6,8 @@ from datetime import datetime
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import time
+import threading
+import os
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"  # Secret key for session management
@@ -141,6 +143,14 @@ def login():
        return 'Incorrect username or password', 401
 """ 
 
-
+def refresh_app():
+    '''
+    Refreshes the app every 60 seconds so that the application is display real time data. 
+    '''
+    while True:
+        time.sleep(60)  # Wait for 60 seconds
+        print("Refreshing Flask app...")
+        os.system("touch app.py")  # Trigger a "file change" in app.py to force reload
 if __name__ == '__main__':
+    threading.Thread(target=refresh_app, daemon=True).start()
     app.run(debug=True)
