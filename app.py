@@ -76,6 +76,20 @@ def home():
         return redirect(url_for('login'))
     return render_template('home.html')
 
+@app.route("/checkInReservation", methods=['GET', 'POST'])
+def checkIn():
+    # Checks in reservation
+    if request.method == 'POST':
+        db = Database()
+
+        last_name = request.form.get('last_name')
+        print(last_name)
+        resSearch = db.check_in_search(last_name)
+        print(resSearch)
+        return render_template('checkInReservation.html', resSearch = resSearch)
+
+    return render_template('checkInReservation.html')
+
 @app.route("/createAccount", methods=['GET', 'POST'])
 @app.route("/createAccount.html", methods=['GET', 'POST']) # Not sure about this
 def createAccount():

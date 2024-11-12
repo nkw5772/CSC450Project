@@ -18,6 +18,7 @@ class Database:
     def __del__(self):
         self.cursor.close()
 
+
     def email_is_unique(self, email: str) -> bool:
         command = "SELECT COUNT(*) FROM Account WHERE AccountEmail = ?"
         params = (email,)
@@ -34,6 +35,14 @@ class Database:
         if self.cursor.fetchone()[0] <= 0:
             return True
         return False
+
+    def check_in_search(self, last_name: str):
+        command = "SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.TableID FROM Account a, Reservation r WHERE r.ResOwner = a.AccountID AND AccountLN = ?"
+        params = (last_name,)
+        self.cursor.execute(command, params)
+        if self.cursor.rowcount <= 0:
+            return None
+        return self.cursor.fetchall()
 
     def add_account(self, first_name: str, last_name: str, type: str, email: str, phone: str, created_date: str, password: str):
         command = "INSERT INTO Account (AccountFN, AccountLN, AccountType, AccountEmail, AccountPhoneNo, AccountCreatedDate, PasswordHash) " \
