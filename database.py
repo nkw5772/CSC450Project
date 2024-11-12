@@ -50,7 +50,8 @@ class Database:
         params = (first_name, last_name, type, email, phone, created_date, password)
         self.cursor.execute(command, params)
         self.database.commit()
-    
+    # INSERT INTO Reservation (ResDate, ResTime, ResNoGuests, TimeCreated, TimeUpdated, ResStatus, TableID, ResOwner)
+    # VALUES ("2024-11-12", "00:04:00", 3, "08:23:42", "08:23:42", "Ready", 1, 1)
     # def verify_exists(self, email):
     #     self.cursor.execute("SELECT PasswordHash FROM Account WHERE AccountEmail = ?", (email,))
     
