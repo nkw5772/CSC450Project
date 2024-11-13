@@ -23,7 +23,7 @@ limiter = Limiter(
 # This page is the root page of the application
 # This will eventually query the database and check the credentials.
 @app.route('/', methods=['GET', 'POST'])
-@limiter.limit("5 per minute")
+# @limiter.limit("5 per minute")
 def login():
     # Track login attempts using sessions
     if 'login_attempts' not in session:
@@ -88,6 +88,26 @@ def checkIn():
         return render_template('checkInReservation.html', resSearch = resSearch)
 
     return render_template('checkInReservation.html')
+
+# Route to perform the actual check-in action by updating reservation status
+@app.route("/confirmCheckIn", methods=['POST'])
+def confirmCheckIn():
+    db = Database()
+    reservation_id = request.form.get('reservation_id')
+    print("Attempting to check in reservation with ResID:", reservation_id)
+    # Attempt to check in the reservation
+    check_in_success = db.check_in_reservation(reservation_id)
+    
+    last_name = request.form.get('last_name')
+    resSearch = db.check_in_search(last_name) if last_name else None
+
+    if check_in_success:
+        message = "Successfully checked in reservation."
+        return render_template('checkInReservation.html', resSearch=resSearch, message=message)
+    else:
+        error = "Failed to check in reservation."
+        return render_template('checkInReservation.html', resSearch=resSearch, error=error)
+
 
 @app.route("/createAccount", methods=['GET', 'POST'])
 @app.route("/createAccount.html", methods=['GET', 'POST']) # Not sure about this

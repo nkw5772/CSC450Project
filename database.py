@@ -33,7 +33,11 @@ class Database:
         # Could also be done by (SELECT * FROM Account) & using cursor.rowcount - not sure which way is better
 
     def phone_is_unique(self, phone: str) -> bool:
-        command = "SELECT COUNT(*) FROM Account WHERE AccountPhoneNo = ?"
+        command = """
+        SELECT COUNT(*) 
+        FROM Account 
+        WHERE AccountPhoneNo = ?
+        """
         params = (phone,)
         self.cursor.execute(command, params)
         if self.cursor.fetchone()[0] <= 0:
@@ -41,7 +45,11 @@ class Database:
         return False
 
     def check_in_search(self, last_name: str):
-        command = "SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.TableID FROM Account a, Reservation r WHERE r.ResOwner = a.AccountID AND AccountLN = ?"
+        command = """
+        SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.TableID 
+        FROM Account a, Reservation r 
+        WHERE r.ResOwner = a.AccountID AND AccountLN = ?
+        """
         params = (last_name,)
         self.cursor.execute(command, params)
         results = self.cursor.fetchall()
@@ -49,9 +57,38 @@ class Database:
             return None
         return results
 
+ # Check-in a reservation by updating both Reservation and Seating tables
+    def check_in_reservation(self, reservation_id):
+        try:
+            update_reservation = """
+            UPDATE Reservation
+            SET ResStatus = 'checked_in'
+            WHERE ResID = ?;
+            """
+            self.cursor.execute(update_reservation, (reservation_id,))
+            print("Updated Reservation table for ResID:", reservation_id)
+
+            update_seating = """
+            UPDATE Seating
+            SET CurrentReservation = ?
+            WHERE TableID = (SELECT TableID FROM Reservation WHERE ResID = ?);
+            """
+            self.cursor.execute(update_seating, (reservation_id,))
+            print("Updated Seating table for TableID linked to ResID:", reservation_id)
+
+            self.database.commit()
+            print("Database commit successful for check-in operation.")
+            return True
+        except sqlite3.Error as e:
+            print("Error checking in reservation:", e)
+            self.database.rollback()
+            return False
+
     def add_account(self, first_name: str, last_name: str, type: str, email: str, phone: str, created_date: str, password: str):
-        command = "INSERT INTO Account (AccountFN, AccountLN, AccountType, AccountEmail, AccountPhoneNo, AccountCreatedDate, PasswordHash) " \
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)"
+        command = """
+        INSERT INTO Account (AccountFN, AccountLN, AccountType, AccountEmail, AccountPhoneNo, AccountCreatedDate, PasswordHash) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """ 
         params = (first_name, last_name, type, email, phone, created_date, password)
         self.cursor.execute(command, params)
         self.database.commit()
