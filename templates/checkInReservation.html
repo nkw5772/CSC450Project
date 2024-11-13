@@ -10,6 +10,10 @@
             margin-top: 10px;
             border-radius: 5px;
             font-weight: bold;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+            left: 0;
         }
         .alert-success {
             background-color: #d4edda;
@@ -21,6 +25,22 @@
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+
+        .closebtn {
+            margin-left: 15px;
+            color: white;
+            font-weight: bold;
+            float: right;
+            font-size: 22px;
+            line-height: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .closebtn:hover {
+            color: black;
+        }
+
         body {
             display: flex;
             justify-content: center;
@@ -62,7 +82,7 @@
             border-radius: 6px;
             box-sizing: border-box;
         }
-
+        
         button {
             width: 100%;
             padding: 12px;
@@ -109,13 +129,15 @@
     </style>
 </head>
 <body>
-
+     
     {% if message %}
         <div class="alert alert-success">
+            <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>
             {{ message }}
         </div>
     {% elif error %}
         <div class="alert alert-danger">
+            <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>
             {{ error }}
         </div>
     {% endif %}
