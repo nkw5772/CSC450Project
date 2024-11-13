@@ -142,8 +142,8 @@ def createAccount():
             return redirect(url_for('home', login_sucess=True))
 
     # If it's a GET request, render the login page
-    db = Database()
-    db.send_email('judevargas222@gmail.com')
+   # db = Database()
+    # db.send_email('judevargas222@gmail.com')
     return render_template('createAccount.html')
 
 @app.errorhandler(429)
