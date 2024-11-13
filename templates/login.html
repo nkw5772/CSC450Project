@@ -80,13 +80,12 @@
         </style>
     </head>
     <body>
-
         <div class="login-container">
             <h2>Login</h2>
             
             <form action="/" method="POST">
-                <label for="username">Email:</label><br>
-                <input type="text" id="username" name="username" required><br><br>
+                <label for="email">Email:</label><br>
+                <input type="text" id="email" name="email" required><br><br>
                 
                 <label for="password">Password:</label><br>
                 <input type="password" id="password" name="password" required><br><br>
@@ -96,6 +95,5 @@
             <p id="error_message" class="error_message">{{error_message}}</p>
             <p>Don't have an account? <a href="/createAccount">Register here</a></p>
         </div>
-
     </body>
 </html>

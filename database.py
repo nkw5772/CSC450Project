@@ -1,5 +1,9 @@
 import mysql.connector
 import sqlite3
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from datetime import datetime, timedelta
 
 class Database:
     """
@@ -40,9 +44,10 @@ class Database:
         command = "SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.TableID FROM Account a, Reservation r WHERE r.ResOwner = a.AccountID AND AccountLN = ?"
         params = (last_name,)
         self.cursor.execute(command, params)
-        if self.cursor.rowcount <= 0:
+        results = self.cursor.fetchall()
+        if len(results) <= 0:
             return None
-        return self.cursor.fetchall()
+        return results
 
     def add_account(self, first_name: str, last_name: str, type: str, email: str, phone: str, created_date: str, password: str):
         command = "INSERT INTO Account (AccountFN, AccountLN, AccountType, AccountEmail, AccountPhoneNo, AccountCreatedDate, PasswordHash) " \
@@ -63,7 +68,7 @@ class Database:
     #     # Email does not exist, return False
     #         return False
     
-    def verify_login(self, email, password):
+    def verify_login(self, email, password): # Maybe add extra check for phone number to sign in with either?
         
         self.cursor.execute("SELECT PasswordHash FROM Account WHERE AccountEmail = ?", (email,))
         
@@ -73,6 +78,70 @@ class Database:
         if result[0] == password:
             return True
         return False
+        
+    def get_account_type(self, email: str) -> str:
+        command = "SELECT AccountType FROM Account WHERE AccountEmail = ?"
+        params = (email,)
+        self.cursor.execute(command, params)
+        return self.cursor.fetchone()[0]
+
+    def remind_reservations(self): # pw: csc team 2
+        command = """SELECT a.AccountEmail, a.AccountFN, r.ResTime
+                     FROM Account a, Reservation r
+                     WHERE a.AccountID = r.ResOwner
+                     AND r.ResStatus = "ready"
+                     AND r.ResDate = ?
+                     AND r.ResTime < ?
+                 """
+        today = datetime.today().strftime('%Y-%m-%d')
+        remind_threshold = (datetime.now() + timedelta(minutes=30)).strftime('%H:%M"%S')
+        self.cursor.execute(command, (today, remind_threshold))
+
+        for row in self.cursor.fetchall():
+            subject = 'Your reservation is almost here!'
+            body = f"""Hello {row[1]}!
+                       Your reservation at {row[2]} is almost here.
+                       Don't miss your reservation!!!
+                """
+            self.send_email(row[0], subject, body)
+
+    def send_email(self, recipient_address, subject, body):
+        # Gmail SMTP server setup
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        email = "judevargas22@gmail.com"
+        app_password = "vits bave zyna htfl"
+
+        alias_email = "csc450project2024@gmail.com"
+
+        message = MIMEMultipart()
+        message['From'] = alias_email
+        message['To'] = recipient_address
+        message["Subject"] = subject
+        message.attach(MIMEText(body, 'plain'))
+
+        # Connect to Gmail SMTP server
+        try:
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            server.starttls()
+            server.login(email, app_password)
+            server.sendmail(alias_email, recipient_address, message.as_string())  # Send with alias
+            print("Email sent successfully from alias!")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        finally:
+            server.quit()
+
+
+    def handle_no_shows(self):
+        command = """UPDATE Reservation
+                 SET ResStatus = "no_show"
+                 WHERE ResDate < ? OR (ResDate = ? AND ResTime < ?)?
+                 """
+
+        # Keep this at the very end of this function
+        self.database.commit()
+
         
 
 # Keeping old code for if/when we switch back to MySQL

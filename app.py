@@ -18,6 +18,7 @@ limiter = Limiter(
     app=app,
     default_limits=["5 per minute", ]  # Default limits for all routes
 )
+
 # Define the route for the login page
 # This page is the root page of the application
 # This will eventually query the database and check the credentials.
@@ -43,20 +44,18 @@ def login():
     if request.method == 'POST':
         db = Database()
         # Get the form data
-        username = request.form.get('username')
+        email = request.form.get('email')
         # password = request.form.get('password')
         password_hash = sha256(request.form.get('password').encode('utf-8')).hexdigest()
         
         # Check if the credentials are correct
-        if db.verify_login(username, password_hash) == True: 
-            # Creakes a cookie for user when they login
+        if db.verify_login(email, password_hash): 
+            # Creates a cookie for user when they login
             resp = make_response(redirect(url_for('home')))
-            resp.set_cookie('username', username)
+            resp.set_cookie('email', email)
             return resp
         else:
             # Show an error message if credentials are incorrect
-            # return redirect(url_for('error'))
-            # return redirect(url_for('index'))
             error_message = "Invalid username or password. Please try again."
             return render_template('login.html', error_message=error_message)
 
@@ -85,9 +84,7 @@ def checkIn():
         db = Database()
 
         last_name = request.form.get('last_name')
-        print(last_name)
         resSearch = db.check_in_search(last_name)
-        print(resSearch)
         return render_template('checkInReservation.html', resSearch = resSearch)
 
     return render_template('checkInReservation.html')
@@ -125,23 +122,29 @@ def createAccount():
             return redirect(url_for('home', login_sucess=True))
 
     # If it's a GET request, render the login page
+    db = Database()
+    db.send_email('judevargas222@gmail.com')
     return render_template('createAccount.html')
+
 @app.errorhandler(429)
 def ratelimit_handler(e):
     error_message = "Too many login attempts. Please try again later"
     return render_template('login.html', error_message=error_message)
+
 """
-# Define the route to handle login form submission
-@app.route('/login', methods=['POST'])
-def login():
-    username = request.form.get('username')
-    password = request.form.get('password')
-    # Check if credentials match
-    if username == 'matt' and password == 'salas':
-       return redirect(url_for('home'))
+# Triggered before every request (GET/POST) and checks if session account type matches database and flags if not
+@app.before_request
+def load_user():
+    email = session['email']
+    if email:
+        db = Database()
+        try:
+            session['account_type'] = db.get_account_type(email)
+        except:
+            return jsonify({"error": "Could not validate user account type. Please try again later."}), 418 # TODO: Find a better error code lmao
     else:
-       return 'Incorrect username or password', 401
-""" 
+        session['account_type'] = 'customer'  # Default role if not logged in
+"""
 
 def refresh_app():
     '''
@@ -151,6 +154,15 @@ def refresh_app():
         time.sleep(60)  # Wait for 60 seconds
         print("Refreshing Flask app...")
         os.system("touch app.py")  # Trigger a "file change" in app.py to force reload
+
+def check_stuff():
+    threading.Timer(60, check_stuff).start()
+
+    db = Database()
+    db.remind_reservations()
+    # db.handle_no_shows()
+
 if __name__ == '__main__':
-    threading.Thread(target=refresh_app, daemon=True).start()
+    check_stuff()
+    # threading.Thread(target=refresh_app, daemon=True).start()
     app.run(debug=True)
