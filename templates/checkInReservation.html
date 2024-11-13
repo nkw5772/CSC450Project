@@ -113,6 +113,7 @@
                     <th>Last Name</th>
                     <th>Number of Guests</th>
                     <th>Table ID</th>
+                    <th>Check In</th>
                 </tr>
             </thead>
             <tbody id="reservation-table-body">
@@ -122,6 +123,12 @@
                         <td>{{ row[1] }}</td>
                         <td>{{ row[2] }}</td>
                         <td>{{ row[3] }}</td>
+                        <td>
+                            <form action="/confirmCheckIn" method="POST" style="display:inline;">
+                                <input type="hidden" name="reservation_id" value="{{ row[3] }}">
+                                <button type="submit">✔</button>
+                            </form>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
