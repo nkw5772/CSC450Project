@@ -111,7 +111,7 @@ class Database:
             SET CurrentReservation = ?
             WHERE TableID = (SELECT TableID FROM Reservation WHERE ResID = ?);
             """
-            self.cursor.execute(update_seating, (reservation_id,))
+            self.cursor.execute(update_seating, (reservation_id, reservation_id))
             print("Updated Seating table for TableID linked to ResID:", reservation_id)
 
             self.database.commit()
