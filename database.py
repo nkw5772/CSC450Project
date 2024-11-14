@@ -69,15 +69,20 @@ class Database:
         command = """
         SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.TableID 
         FROM Account a, Reservation r 
+<<<<<<< HEAD
         WHERE r.ResOwner = a.AccountID AND a.AccountLN = ?
+=======
+        WHERE r.ResOwner = a.AccountID AND LOWER(AccountLN) = ?
+>>>>>>> 8ef7d99ab9c97b639316798b54a19ecbf40c7402
         """
-        params = (last_name,)
+        params = (last_name.lower(),)
         self.cursor.execute(command, params)
         results = self.cursor.fetchall()
         if len(results) <= 0:
-            return None
+            return []
         return results
     
+<<<<<<< HEAD
     def get_user_reservations(self, email: str):
         command = """
         SELECT r.ResDate, r.ResTime, r.ResNoGuests, r.TableID, r.ResID
@@ -93,6 +98,21 @@ class Database:
         if len(results) <= 0:
             return None
         return results
+=======
+    def make_reservation(self, ResDate, ResTime, ResNoGuests, TableID):
+        ResID = 1 # Temporary hard code
+        TimeCreated = datetime.now()
+        TimeUpdated = TimeCreated
+        ResStatus = "Pending" # Idk the different status' so open to change
+        ResOwner = "Nathan" # Temporary hard code until we can figure out how to get the name from the cookie
+        create_reservation = """
+        INSERT INTO Reservation (ResID, ResDate, ResTime, ResNoGuests, TimeCreated, TimeUpdated, ResStatus, TableID, ResOwner)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        self.cursor.execute(create_reservation, (ResID, ResDate, ResTime, ResNoGuests, TimeCreated, TimeUpdated, ResStatus, TableID, ResOwner))
+        self.database.commit()
+
+>>>>>>> 8ef7d99ab9c97b639316798b54a19ecbf40c7402
 
  # Check-in a reservation by updating both Reservation and Seating tables
     def check_in_reservation(self, reservation_id):
@@ -120,6 +140,17 @@ class Database:
             print("Error checking in reservation:", e)
             self.database.rollback()
             return False
+    
+    # This is kinda a guess until we get a proper ordering page up
+    # Still need to figure out how we are gunna do expiration date and stuff, maybe make a file for holding each item data?
+    def order_meat(self, item, quantity):
+        query = """
+        INSERT INTO Inventory (Item, Quantity)
+        VALUES (?, ?)
+        """
+        self.cursor.execute(query, (item, quantity))
+        self.database.commit()
+
 
     def make_reservation(self, reservation_date, reservation_time, guests, TimeCreated, TimeUpdated, ResStatus, table_id, ResOwner):
         command = """
@@ -254,6 +285,38 @@ class Database:
         finally:
             server.quit()
 
+<<<<<<< HEAD
+=======
+    def unreserve_table(self, reservation_id):
+        command = """UPDATE Seating
+                            SET CurrentReservation = NULL
+                            WHERE TableID = (SELECT TableID FROM Reservation WHERE ResID = ?);
+                            """
+        params = (reservation_id,)
+        self.cursor.execute(command, params)
+        self.database.commit()
+
+    def check_reservation_conflict(self, table_id, reservation_date, reservation_time):
+        try:
+            # Query for overlapping reservations (within an hour)
+            query = """
+                SELECT COUNT(*)
+                FROM Reservation
+                WHERE TableID = ?
+                AND ResDate = ?
+                AND (
+                    (ResTime <= ? AND DATETIME(ResTime, '+60 minutes') > ?)
+                    OR (ResTime >= ? AND DATETIME(?, '+60 minutes') > ResTime)
+                )
+            """
+            self.cursor.execute(query, (table_id, reservation_date, reservation_time, reservation_time, reservation_time, reservation_time))
+            result = self.cursor.fetchone()
+            return result[0] > 0  # True if there is a conflicting reservation
+        except Exception as e:
+            print(f"Error checking reservation conflict: {e}")
+            return False
+
+>>>>>>> 8ef7d99ab9c97b639316798b54a19ecbf40c7402
     def handle_no_shows(self):
         command = """SELECT a.AccountEmail, r.ResID FROM Account a, Reservation r             
                     WHERE a.AccountID = r.ResID
@@ -274,6 +337,7 @@ class Database:
 
         # Keep this at the very end of this function
         self.database.commit()
+<<<<<<< HEAD
     
     def update_res_status(self, reservation_id, new_status):
         command = """UPDATE Reservation
@@ -294,6 +358,8 @@ class Database:
         self.cursor.execute(command, params)
         self.database.commit()
         
+=======
+>>>>>>> 8ef7d99ab9c97b639316798b54a19ecbf40c7402
 
 # Keeping old code for if/when we switch back to MySQL
 '''
