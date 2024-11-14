@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Restaurant Reservation System</title>
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
   <style>
     * {
       box-sizing: border-box;
@@ -189,8 +190,13 @@
   </header>
 
   <div class="main-content">
-    <h2>Reserve Your Table Today!</h2>
-    <p>Click on a table to start your reservation.</p>
+    {% if res_id %}
+      <h2>Modify Your Table Today!</h2>
+      <p>Click on a table to modify your reservation.</p>
+    {% else %}
+      <h2>Reserve Your Table Today!</h2>
+      <p>Click on a table to start your reservation.</p>
+    {% endif %}
   </div>
 
   <div class="restaurant-layout">
@@ -233,18 +239,53 @@
       <input type="time" id="reservation-time" name="reservation-time" required>
 
       <!-- Submit Button -->
-      <button type="submit" class="reserve-btn">Reserve Table</button>
+      <button type="button" class="reserve-btn" onclick=submitReservation()>{{ "Save Changes" if res_id else "Make Reservation" }}</button>
   </div>
-  
+
+  {% if res_id %}
+    <script type="text/javascript">
+      const reservation_id = "{{ res_id }}";
+    </script>
+  {% endif %}
 
   <script>
     function openPanel(tableNumber) {
       const sidePanel = document.getElementById("sidePanel");
+      sidePanel.dataset.tableId = tableNumber
       sidePanel.classList.add("open");
+      sidePanel.dataset.tableId = tableNumber;  // Set table ID in side panel data attribute
     }
 
     function closePanel() {
       document.getElementById("sidePanel").classList.remove("open");
+    }
+
+    function submitReservation() {
+      const guests = document.getElementById("guests").value;
+      const reservationDate = document.getElementById("reservation-date").value;
+      const reservationTime = document.getElementById("reservation-time").value;
+      const tableId = document.getElementById("sidePanel").dataset.tableId;
+
+      // Perform the AJAX request
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/reserve", true);
+      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+      xhr.onload = function () {
+        if (xhr.status === 200) {
+          alert("Reservation successful!");
+          closePanel();  // Close the side panel on success
+        } else {
+          alert(xhr.responseText);
+        }
+      };
+      data = `guests=${guests}&reservation_date=${reservationDate}&reservation_time=${reservationTime}&table_id=${tableId}`
+      console.log(data)
+      if (typeof reservation_id !== 'undefined' && reservation_id !== null) {
+        console.log(reservation_id)
+        data += `&reservation_id=${reservation_id}`;
+      }
+      xhr.send(data);
     }
   </script>
 </body>

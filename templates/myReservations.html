@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Check-In Reservation</title>
+    <title>My Reservations</title>
     <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
     <style>
         .alert {
@@ -69,6 +69,10 @@
             font-size: 27px;
         }
 
+        h4 {
+            text-align: center
+        }
+
         label {
             color: #333333;
             font-weight: bold;
@@ -130,7 +134,6 @@
     </style>
 </head>
 <body>
-     
     {% if message %}
         <div class="alert alert-success">
             <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>
@@ -143,47 +146,46 @@
         </div>
     {% endif %}
 
-    {% if not resSearch %}
-    <div class="form-container">
-        <h2>Check-In Reservation</h2>
-        <form id="search-form" method="POST">
-            <label for="customer-name">Enter Customer Name:</label>
-            <input type="text" id="customer-name" name="last_name" required>
-            <button type="submit">Search</button>
-        </form>
-        <div id="reservation-list"></div>
-    </div>
-    {% else %}
     <div class="table-container">
-        <h2>Search Results</h2>
+        <h2>{{ name }}'s Reservations</h2>
+        {% if reservations %}
         <table id="reservation-table">
             <thead>
                 <tr>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Number of Guests</th>
-                    <th>Table ID</th>
-                    <th>Check In</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>No. Guests</th>
+                    <th>Table No.</th>
+                    <th>Modify</th>
+                    <th>Cancel</th>
                 </tr>
             </thead>
             <tbody id="reservation-table-body">
-                {% for row in resSearch %}
+                {% for row in reservations %}
                     <tr>
                         <td>{{ row[0] }}</td>
                         <td>{{ row[1] }}</td>
                         <td>{{ row[2] }}</td>
                         <td>{{ row[3] }}</td>
                         <td>
-                            <form action="/confirmCheckIn" method="POST" style="display:inline;">
-                                <input type="hidden" name="reservation_id" value="{{ row[3] }}">
-                                <button type="submit">✔</button>
+                            <form action="/reservation" method="POST" style="display:inline;">
+                                <input type="hidden" name="reservation_id" value="{{ row[4] }}">
+                                <button type="submit">⚙️</button>
+                            </form>
+                        </td>
+                        <td>
+                            <form action="/myReservations" method="POST" style="display:inline;">
+                                <input type="hidden" name="reservation_id" value="{{ row[4] }}">
+                                <button type="submit">✖</button>
                             </form>
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
+        {% else %}
+        <h4>No upcoming reservations. Schedule one!</h4>
+        {% endif %}
     </div>
-    {% endif %}
 </body>
 </html>

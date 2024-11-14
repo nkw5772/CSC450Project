@@ -9,6 +9,8 @@ import time
 import threading
 import os
 
+
+
 app = Flask(__name__)
 app.secret_key = "supersecretkey"  # Secret key for session management
 limiter = Limiter(app)
@@ -18,12 +20,15 @@ limiter = Limiter(
     app=app,
     default_limits=["5 per minute", ]  # Default limits for all routes
 )
+
 # Define the route for the login page
 # This page is the root page of the application
 # This will eventually query the database and check the credentials.
 @app.route('/', methods=['GET', 'POST'])
-@limiter.limit("5 per minute")
+# @limiter.limit("5 per minute")
 def login():
+    if 'email' in session:
+        return redirect(url_for('home'))
     # Track login attempts using sessions
     if 'login_attempts' not in session:
         session['login_attempts'] = []
@@ -43,20 +48,18 @@ def login():
     if request.method == 'POST':
         db = Database()
         # Get the form data
-        username = request.form.get('username')
+        email = request.form.get('email')
         # password = request.form.get('password')
         password_hash = sha256(request.form.get('password').encode('utf-8')).hexdigest()
         
         # Check if the credentials are correct
-        if db.verify_login(username, password_hash) == True: 
-            # Creakes a cookie for user when they login
+        if db.verify_login(email, password_hash): 
+            # Creates a cookie for user when they login
             resp = make_response(redirect(url_for('home')))
-            resp.set_cookie('username', username)
+            session['email'] = email
             return resp
         else:
             # Show an error message if credentials are incorrect
-            # return redirect(url_for('error'))
-            # return redirect(url_for('index'))
             error_message = "Invalid username or password. Please try again."
             return render_template('login.html', error_message=error_message)
 
@@ -65,32 +68,110 @@ def login():
 
 @app.route("/logout")
 def logout():
-    # Deletes user's cookie and returns them to login page
-    resp = make_response(redirect(url_for('login')))
-    resp.delete_cookie('username')
-    return resp
+    # Deletes user's cookies and returns them to login page
+    session.clear()
+    return redirect(url_for('login'))
 
 @app.route("/home")
 def home():
     # Loads home if user is logged in, otherwise sends them back to login page
-    username = request.cookies.get('username')
-    if not username:
+    if 'email' not in session:
         return redirect(url_for('login'))
     return render_template('home.html')
 
-@app.route("/checkInReservation", methods=['GET', 'POST'])
-def checkIn():
-    # Checks in reservation
-    if request.method == 'POST':
+@app.route("/reservation", methods=['GET', 'POST'])
+def reservations():
+    if request.method == 'POST': # When modifying a res through /myReservations
+        res_id = request.form.get('reservation_id')
+        return render_template('reservation.html', res_id = res_id)
+    db = Database()
+    return render_template('reservation.html')
+
+@app.route('/reserve', methods=['POST'])
+def reserve_table():
+    try:
+    # Extract form data from the request
+        guests = request.form.get('guests')
+        res_date = request.form.get('reservation_date')
+        res_time = request.form.get('reservation_time')
+        table_id = request.form.get('table_id')
+        res_id = request.form.get('reservation_id', default = None)
+
+        print(f"Guests: {guests}, Date: {res_date}, Time: {res_time}, Table ID: {table_id}")
+
+        # Establish connection to the SQL Server
         db = Database()
 
+        if db.check_reservation_conflict(table_id, res_date, res_time):
+            return jsonify({'error': 'This table is already reserved at the selected time. Please choose another time or table.'}), 409
+
+        print(f"Guests: {guests}, Date: {res_date}, Time: {res_time}, Table ID: {table_id}")
+        now = datetime.now().strftime('%H:%M:%S')
+        if res_id:
+            current_res = db.get_res_from_id(res_id)
+            time_created = current_res[4]
+            res_owner = current_res[8]
+            db.modify_reservation(res_id, res_date, res_time, guests, time_created, now, 'scheduled', table_id, res_owner)
+        else:
+            db.make_reservation(res_date, res_time, guests, now, now, "scheduled", table_id, db.get_id_from_email(session['email']))
+
+        return jsonify({'message': 'Reservation successful!'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route("/checkInReservation", methods=['GET', 'POST'])
+def checkIn():
+    if request.method == 'POST':
+        db = Database()
         last_name = request.form.get('last_name')
-        print(last_name)
         resSearch = db.check_in_search(last_name)
-        print(resSearch)
-        return render_template('checkInReservation.html', resSearch = resSearch)
+        
+        # Check if no results were found
+        if not resSearch:
+            error = "No reservation with the provided name."
+            return render_template('checkInReservation.html', resSearch=None, error=error)
+        
+        return render_template('checkInReservation.html', resSearch=resSearch)
 
     return render_template('checkInReservation.html')
+
+
+# Route to perform the actual check-in action by updating reservation status
+@app.route("/confirmCheckIn", methods=['POST'])
+def confirmCheckIn():
+    db = Database()
+    reservation_id = request.form.get('reservation_id')
+    print("Attempting to check in reservation with ResID:", reservation_id)
+    # Attempt to check in the reservation
+    check_in_success = db.check_in_reservation(reservation_id)
+    
+    last_name = request.form.get('last_name')
+    resSearch = db.check_in_search(last_name) if last_name else None
+
+    if check_in_success:
+        message = "Successfully checked in reservation."
+        return render_template('checkInReservation.html', resSearch=resSearch, message=message)
+    else:
+        error = "Failed to check in reservation."
+        return render_template('checkInReservation.html', resSearch=resSearch, error=error)
+
+@app.route('/myReservations', methods=['GET', 'POST'])
+def my_reservations():
+    db = Database()
+            
+    name = db.get_name_from_email(session['email'])[0]
+    reservations = db.get_user_reservations(session['email'])
+
+    if request.method == 'POST': # If cancelling a res 
+        try:
+            res_id = request.form.get('reservation_id')
+            db.update_res_status(res_id, 'cancelled')
+            db.unreserve_table(res_id)
+            return render_template('myReservations.html', name = name, reservations = reservations, message = "Reservation cancelled successfully!")
+        except:
+            return render_template('myReservations.html', name = name, reservations = reservations, error = 'Unable to cancel reservation. Oops lmao')
+
+    return render_template('myReservations.html', name = name, reservations = reservations)
 
 @app.route("/createAccount", methods=['GET', 'POST'])
 @app.route("/createAccount.html", methods=['GET', 'POST']) # Not sure about this
@@ -125,24 +206,31 @@ def createAccount():
             return redirect(url_for('home', login_sucess=True))
 
     # If it's a GET request, render the login page
+   # db = Database()
+    # db.send_email('judevargas222@gmail.com')
     return render_template('createAccount.html')
+
 @app.errorhandler(429)
 def ratelimit_handler(e):
     error_message = "Too many login attempts. Please try again later"
     return render_template('login.html', error_message=error_message)
-"""
-# Define the route to handle login form submission
-@app.route('/login', methods=['POST'])
-def login():
-    username = request.form.get('username')
-    password = request.form.get('password')
-    # Check if credentials match
-    if username == 'matt' and password == 'salas':
-       return redirect(url_for('home'))
-    else:
-       return 'Incorrect username or password', 401
-""" 
 
+"""
+# Triggered before every request (GET/POST) and checks if session account type matches database and flags if not
+@app.before_request
+def load_user():
+    email = session['email']
+    if email:
+        db = Database()
+        try:
+            session['account_type'] = db.get_account_type(email)
+        except:
+            return jsonify({"error": "Could not validate user account type. Please try again later."}), 418 # TODO: Find a better error code lmao
+    else:
+        session['account_type'] = 'customer'  # Default role if not logged in
+"""
+
+"""
 def refresh_app():
     '''
     Refreshes the app every 60 seconds so that the application is display real time data. 
@@ -151,6 +239,16 @@ def refresh_app():
         time.sleep(60)  # Wait for 60 seconds
         print("Refreshing Flask app...")
         os.system("touch app.py")  # Trigger a "file change" in app.py to force reload
+"""
+
+def check_stuff():
+    threading.Timer(60, check_stuff).start()
+
+    db = Database()
+    db.remind_reservations()
+    # db.handle_no_shows()
+
 if __name__ == '__main__':
-    threading.Thread(target=refresh_app, daemon=True).start()
+    check_stuff()
+    # threading.Thread(target=refresh_app, daemon=True).start()
     app.run(debug=True)
