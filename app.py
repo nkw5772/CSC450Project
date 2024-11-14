@@ -102,10 +102,10 @@ def reserve_table():
         # Establish connection to the SQL Server
         db = Database()
 
-        if db.check_reservation_conflict(table_id, reservation_date, reservation_time):
+        if db.check_reservation_conflict(table_id, res_date, res_time):
             return jsonify({'error': 'This table is already reserved at the selected time. Please choose another time or table.'}), 409
 
-        print(f"Guests: {guests}, Date: {reservation_date}, Time: {reservation_time}, Table ID: {table_id}")
+        print(f"Guests: {guests}, Date: {res_date}, Time: {res_time}, Table ID: {table_id}")
         now = datetime.now().strftime('%H:%M:%S')
         if res_id:
             current_res = db.get_res_from_id(res_id)

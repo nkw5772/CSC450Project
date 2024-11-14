@@ -69,11 +69,7 @@ class Database:
         command = """
         SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.TableID 
         FROM Account a, Reservation r 
-<<<<<<< HEAD
-        WHERE r.ResOwner = a.AccountID AND a.AccountLN = ?
-=======
-        WHERE r.ResOwner = a.AccountID AND LOWER(AccountLN) = ?
->>>>>>> 8ef7d99ab9c97b639316798b54a19ecbf40c7402
+        WHERE r.ResOwner = a.AccountID AND LOWER(a.AccountLN) = ?
         """
         params = (last_name.lower(),)
         self.cursor.execute(command, params)
@@ -82,7 +78,6 @@ class Database:
             return []
         return results
     
-<<<<<<< HEAD
     def get_user_reservations(self, email: str):
         command = """
         SELECT r.ResDate, r.ResTime, r.ResNoGuests, r.TableID, r.ResID
@@ -98,21 +93,7 @@ class Database:
         if len(results) <= 0:
             return None
         return results
-=======
-    def make_reservation(self, ResDate, ResTime, ResNoGuests, TableID):
-        ResID = 1 # Temporary hard code
-        TimeCreated = datetime.now()
-        TimeUpdated = TimeCreated
-        ResStatus = "Pending" # Idk the different status' so open to change
-        ResOwner = "Nathan" # Temporary hard code until we can figure out how to get the name from the cookie
-        create_reservation = """
-        INSERT INTO Reservation (ResID, ResDate, ResTime, ResNoGuests, TimeCreated, TimeUpdated, ResStatus, TableID, ResOwner)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """
-        self.cursor.execute(create_reservation, (ResID, ResDate, ResTime, ResNoGuests, TimeCreated, TimeUpdated, ResStatus, TableID, ResOwner))
-        self.database.commit()
 
->>>>>>> 8ef7d99ab9c97b639316798b54a19ecbf40c7402
 
  # Check-in a reservation by updating both Reservation and Seating tables
     def check_in_reservation(self, reservation_id):
