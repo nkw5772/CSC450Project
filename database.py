@@ -178,6 +178,16 @@ class Database:
 
         # Keep this at the very end of this function
         self.database.commit()
+    
+    def unreserve_table(self, reservation_id):
+        command = """UPDATE Seating
+                            SET CurrentReservation = NULL
+                            WHERE TableID = (SELECT TableID FROM Reservation WHERE ResID = ?);
+                            """
+        params = (reservation_id,)
+        self.cursor.execute(command, params)
+        self.database.commit()
+        
 
 # Keeping old code for if/when we switch back to MySQL
 '''
