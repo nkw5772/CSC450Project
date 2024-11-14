@@ -92,10 +92,13 @@ def reserve_table():
         reservation_time = request.form.get('reservation_time')
         table_id = request.form.get('table_id')
 
-        print(f"Guests: {guests}, Date: {reservation_date}, Time: {reservation_time}, Table ID: {table_id}")
-
         # Establish connection to the SQL Server
         db = Database()
+
+        if db.check_reservation_conflict(table_id, reservation_date, reservation_time):
+            return jsonify({'error': 'This table is already reserved at the selected time. Please choose another time or table.'}), 409
+
+        print(f"Guests: {guests}, Date: {reservation_date}, Time: {reservation_time}, Table ID: {table_id}")
 
         db.make_reservation(1, reservation_date, reservation_time, guests, "now", "now", "Filled", table_id, "Nathan")
 

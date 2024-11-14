@@ -241,11 +241,13 @@
     function openPanel(tableNumber) {
       const sidePanel = document.getElementById("sidePanel");
       sidePanel.classList.add("open");
+      sidePanel.dataset.tableId = tableNumber;  // Set table ID in side panel data attribute
     }
 
     function closePanel() {
       document.getElementById("sidePanel").classList.remove("open");
     }
+
     function submitReservation() {
       const guests = document.getElementById("guests").value;
       const reservationDate = document.getElementById("reservation-date").value;
@@ -262,7 +264,7 @@
           alert("Reservation successful!");
           closePanel();  // Close the side panel on success
         } else {
-          alert("Error: " + xhr.responseText);
+          alert(xhr.responseText);
         }
       };
 
