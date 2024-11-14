@@ -11,6 +11,9 @@ class Database:
     Life Pro Tip: single-value parameters still need to be in Tuple form, so assign a parameter value as (param_name,)
     """
 
+    ###
+    #region DB CONNECTION
+    ###
     def __init__(self):
         # Set up connection to database (cursor is used to interact with it)
         try:
@@ -21,7 +24,21 @@ class Database:
     
     def __del__(self):
         self.cursor.close()
+    #endregion DB CONNECTION
 
+
+    ###
+    #region USER AUTHENTICATION
+    ###
+
+    def add_account(self, first_name: str, last_name: str, type: str, email: str, phone: str, created_date: str, password: str):
+        command = """
+        INSERT INTO Account (AccountFN, AccountLN, AccountType, AccountEmail, AccountPhoneNo, AccountCreatedDate, PasswordHash) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """ 
+        params = (first_name, last_name, type, email, phone, created_date, password)
+        self.cursor.execute(command, params)
+        self.database.commit()
 
     def email_is_unique(self, email: str) -> bool:
         command = "SELECT COUNT(*) FROM Account WHERE AccountEmail = ?"
@@ -43,14 +60,34 @@ class Database:
         if self.cursor.fetchone()[0] <= 0:
             return True
         return False
+#endregion USER AUTHENTICATION
 
+    ###
+    #region  RESERVATIONS
+    ###
     def check_in_search(self, last_name: str):
         command = """
         SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.TableID 
         FROM Account a, Reservation r 
-        WHERE r.ResOwner = a.AccountID AND AccountLN = ?
+        WHERE r.ResOwner = a.AccountID AND a.AccountLN = ?
         """
         params = (last_name,)
+        self.cursor.execute(command, params)
+        results = self.cursor.fetchall()
+        if len(results) <= 0:
+            return None
+        return results
+    
+    def get_user_reservations(self, email: str):
+        command = """
+        SELECT r.ResDate, r.ResTime, r.ResNoGuests, r.TableID, r.ResID
+        FROM Account a, Reservation r 
+        WHERE r.ResOwner = a.AccountID
+        AND a.AccountEmail = ?
+        AND ResStatus IN ("scheduled", "ready", "checked_in", "finished")
+        ORDER BY r.Resdate ASC, r.ResTime ASC
+        """
+        params = (email,)
         self.cursor.execute(command, params)
         results = self.cursor.fetchall()
         if len(results) <= 0:
@@ -84,14 +121,62 @@ class Database:
             self.database.rollback()
             return False
 
-    def add_account(self, first_name: str, last_name: str, type: str, email: str, phone: str, created_date: str, password: str):
+    def make_reservation(self, reservation_date, reservation_time, guests, TimeCreated, TimeUpdated, ResStatus, table_id, ResOwner):
         command = """
-        INSERT INTO Account (AccountFN, AccountLN, AccountType, AccountEmail, AccountPhoneNo, AccountCreatedDate, PasswordHash) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        """ 
-        params = (first_name, last_name, type, email, phone, created_date, password)
+        INSERT INTO Reservation (ResDate, ResTime, ResNoGuests, TimeCreated, TimeUpdated, ResStatus, TableID, ResOwner)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        self.cursor.execute(command, (reservation_date, reservation_time, guests, TimeCreated, TimeUpdated, ResStatus, table_id, ResOwner))
+        self.database.commit()
+
+    def modify_reservation(self, reservation_id, reservation_date, reservation_time, guests, time_created, time_updated, res_status, table_id, res_owner):
+        command = """
+        UPDATE Reservation SET 
+        ResDate = ?,
+        ResTime = ?,
+        ResNoGuests = ?,
+        TimeCreated = ?,
+        TimeUpdated = ?,
+        ResStatus = ?,
+        TableID = ?,
+        ResOwner = ?
+        WHERE ResID = ?
+        """
+        params = (reservation_date, reservation_time, guests, time_created, time_updated, res_status, table_id, res_owner, reservation_id)
         self.cursor.execute(command, params)
         self.database.commit()
+
+    def remind_reservations(self): # pw: csc team 2
+        command = """SELECT a.AccountEmail, a.AccountFN, r.ResTime
+                     FROM Account a, Reservation r
+                     WHERE a.AccountID = r.ResOwner
+                     AND r.ResStatus = "ready"
+                     AND r.ResDate = ?
+                     AND r.ResTime < ?
+                 """
+        today = datetime.today().strftime('%Y-%m-%d')
+        remind_threshold = (datetime.now() + timedelta(minutes=30)).strftime('%H:%M"%S')
+        self.cursor.execute(command, (today, remind_threshold))
+
+        for row in self.cursor.fetchall():
+            subject = 'Your reservation is almost here!'
+            body = f"""Hello {row[1]}!
+                       Your reservation at {row[2]} is almost here.
+                       Don't miss your reservation!!!
+                """
+            self.send_email(row[0], subject, body)
+
+    def get_res_from_id(self, res_id):
+        command = """
+        SELECT *
+        FROM Reservation
+        WHERE ResID = ?
+        """
+        params = (res_id,)
+        self.cursor.execute(command, params)
+        return self.cursor.fetchone()
+    #endregion RESERVATIONS
+
     # INSERT INTO Reservation (ResDate, ResTime, ResNoGuests, TimeCreated, TimeUpdated, ResStatus, TableID, ResOwner)
     # VALUES ("2024-11-12", "00:04:00", 3, "08:23:42", "08:23:42", "Ready", 1, 1)
     # def verify_exists(self, email):
@@ -121,26 +206,26 @@ class Database:
         params = (email,)
         self.cursor.execute(command, params)
         return self.cursor.fetchone()[0]
-
-    def remind_reservations(self): # pw: csc team 2
-        command = """SELECT a.AccountEmail, a.AccountFN, r.ResTime
-                     FROM Account a, Reservation r
-                     WHERE a.AccountID = r.ResOwner
-                     AND r.ResStatus = "ready"
-                     AND r.ResDate = ?
-                     AND r.ResTime < ?
-                 """
-        today = datetime.today().strftime('%Y-%m-%d')
-        remind_threshold = (datetime.now() + timedelta(minutes=30)).strftime('%H:%M"%S')
-        self.cursor.execute(command, (today, remind_threshold))
-
-        for row in self.cursor.fetchall():
-            subject = 'Your reservation is almost here!'
-            body = f"""Hello {row[1]}!
-                       Your reservation at {row[2]} is almost here.
-                       Don't miss your reservation!!!
-                """
-            self.send_email(row[0], subject, body)
+    
+    def get_name_from_email(self, email: str) -> tuple:
+        command = """
+        SELECT AccountFN, AccountLN
+        FROM Account
+        WHERE AccountEmail = ?
+        """
+        params = (email,)
+        self.cursor.execute(command, params)
+        return self.cursor.fetchone()
+    
+    def get_id_from_email(self, email: str) -> int:
+        command = """
+        SELECT AccountID
+        FROM Account
+        WHERE AccountEmail = ?
+        """
+        params = (email,)
+        self.cursor.execute(command, params)
+        return self.cursor.fetchone()[0]
 
     def send_email(self, recipient_address, subject, body):
         # Gmail SMTP server setup
@@ -163,22 +248,43 @@ class Database:
             server.starttls()
             server.login(email, app_password)
             server.sendmail(alias_email, recipient_address, message.as_string())  # Send with alias
-            print("Email sent successfully from alias!")
+            print(f"Email sent with subject: '{subject}'")
         except Exception as e:
             print(f"An error occurred: {e}")
         finally:
             server.quit()
 
-
     def handle_no_shows(self):
-        command = """UPDATE Reservation
-                 SET ResStatus = "no_show"
-                 WHERE ResDate < ? OR (ResDate = ? AND ResTime < ?)
-                 """
+        command = """SELECT a.AccountEmail, r.ResID FROM Account a, Reservation r             
+                    WHERE a.AccountID = r.ResID
+                    AND r.ResStatus = "ready"
+                    AND r.ResDate < ?
+                    OR (r.ResDate = ? AND r.ResTime < ?)
+                    """
+        today = datetime.today().strftime('%Y-%m-%d')
+        noshow_threshold = (datetime.now() - timedelta(minutes=10)).strftime('%H:%M:%S')
+        params = (today, today, noshow_threshold)
+        self.cursor.execute(command, params)
+        
+        for email, id in self.cursor.fetchall():
+            self.send_email(email, 'Reservation No-Show', 'Hello!\nYou recently missed a reservation, and it has been noted.')
+            self.update_res_status(id, "no_show")
+            self.unreserve_table(id)
+            print(f'Table with ID #{id} has been un-reserved.')
 
         # Keep this at the very end of this function
         self.database.commit()
     
+    def update_res_status(self, reservation_id, new_status):
+        command = """UPDATE Reservation
+                     SET ResStatus = ?
+                     WHERE ResID = ?
+                     """
+        params = (new_status, reservation_id)
+        self.cursor.execute(command, params)
+        self.database.commit()
+
+    # I wanna replace this with an SQL trigger
     def unreserve_table(self, reservation_id):
         command = """UPDATE Seating
                             SET CurrentReservation = NULL

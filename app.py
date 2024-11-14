@@ -27,6 +27,8 @@ limiter = Limiter(
 @app.route('/', methods=['GET', 'POST'])
 # @limiter.limit("5 per minute")
 def login():
+    if 'email' in session:
+        return redirect(url_for('home'))
     # Track login attempts using sessions
     if 'login_attempts' not in session:
         session['login_attempts'] = []
@@ -54,7 +56,7 @@ def login():
         if db.verify_login(email, password_hash): 
             # Creates a cookie for user when they login
             resp = make_response(redirect(url_for('home')))
-            resp.set_cookie('email', email)
+            session['email'] = email
             return resp
         else:
             # Show an error message if credentials are incorrect
@@ -66,21 +68,23 @@ def login():
 
 @app.route("/logout")
 def logout():
-    # Deletes user's cookie and returns them to login page
-    resp = make_response(redirect(url_for('login')))
-    resp.delete_cookie('username')
-    return resp
+    # Deletes user's cookies and returns them to login page
+    session.clear()
+    return redirect(url_for('login'))
 
 @app.route("/home")
 def home():
     # Loads home if user is logged in, otherwise sends them back to login page
-    username = request.cookies.get('username')
-    if not username:
+    if 'email' not in session:
         return redirect(url_for('login'))
     return render_template('home.html')
 
-@app.route("/reservation")
+@app.route("/reservation", methods=['GET', 'POST'])
 def reservations():
+    if request.method == 'POST': # When modifying a res through /myReservations
+        res_id = request.form.get('reservation_id')
+        return render_template('reservation.html', res_id = res_id)
+    db = Database()
     return render_template('reservation.html')
 
 @app.route('/reserve', methods=['POST'])
@@ -88,16 +92,23 @@ def reserve_table():
     try:
     # Extract form data from the request
         guests = request.form.get('guests')
-        reservation_date = request.form.get('reservation_date')
-        reservation_time = request.form.get('reservation_time')
+        res_date = request.form.get('reservation_date')
+        res_time = request.form.get('reservation_time')
         table_id = request.form.get('table_id')
+        res_id = request.form.get('reservation_id', default = None)
 
-        print(f"Guests: {guests}, Date: {reservation_date}, Time: {reservation_time}, Table ID: {table_id}")
+        print(f"Guests: {guests}, Date: {res_date}, Time: {res_time}, Table ID: {table_id}")
 
         # Establish connection to the SQL Server
         db = Database()
-
-        db.make_reservation(1, reservation_date, reservation_time, guests, "now", "now", "Filled", table_id, "Nathan")
+        now = datetime.now().strftime('%H:%M:%S')
+        if res_id:
+            current_res = db.get_res_from_id(res_id)
+            time_created = current_res[4]
+            res_owner = current_res[8]
+            db.modify_reservation(res_id, res_date, res_time, guests, time_created, now, 'scheduled', table_id, res_owner)
+        else:
+            db.make_reservation(res_date, res_time, guests, now, now, "scheduled", table_id, db.get_id_from_email(session['email']))
 
         return jsonify({'message': 'Reservation successful!'}), 200
     except Exception as e:
@@ -134,6 +145,23 @@ def confirmCheckIn():
         error = "Failed to check in reservation."
         return render_template('checkInReservation.html', resSearch=resSearch, error=error)
 
+@app.route('/myReservations', methods=['GET', 'POST'])
+def my_reservations():
+    db = Database()
+            
+    name = db.get_name_from_email(session['email'])[0]
+    reservations = db.get_user_reservations(session['email'])
+
+    if request.method == 'POST': # If cancelling a res 
+        try:
+            res_id = request.form.get('reservation_id')
+            db.update_res_status(res_id, 'cancelled')
+            db.unreserve_table(res_id)
+            return render_template('myReservations.html', name = name, reservations = reservations, message = "Reservation cancelled successfully!")
+        except:
+            return render_template('myReservations.html', name = name, reservations = reservations, error = 'Unable to cancel reservation. Oops lmao')
+
+    return render_template('myReservations.html', name = name, reservations = reservations)
 
 @app.route("/createAccount", methods=['GET', 'POST'])
 @app.route("/createAccount.html", methods=['GET', 'POST']) # Not sure about this
@@ -192,6 +220,7 @@ def load_user():
         session['account_type'] = 'customer'  # Default role if not logged in
 """
 
+"""
 def refresh_app():
     '''
     Refreshes the app every 60 seconds so that the application is display real time data. 
@@ -200,6 +229,7 @@ def refresh_app():
         time.sleep(60)  # Wait for 60 seconds
         print("Refreshing Flask app...")
         os.system("touch app.py")  # Trigger a "file change" in app.py to force reload
+"""
 
 def check_stuff():
     threading.Timer(60, check_stuff).start()
