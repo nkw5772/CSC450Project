@@ -9,6 +9,8 @@ import time
 import threading
 import os
 
+
+
 app = Flask(__name__)
 app.secret_key = "supersecretkey"  # Secret key for session management
 limiter = Limiter(app)
@@ -76,6 +78,30 @@ def home():
     if not username:
         return redirect(url_for('login'))
     return render_template('home.html')
+
+@app.route("/reservation")
+def reservations():
+    return render_template('reservation.html')
+
+@app.route('/reserve', methods=['POST'])
+def reserve_table():
+    try:
+    # Extract form data from the request
+        guests = request.form.get('guests')
+        reservation_date = request.form.get('reservation_date')
+        reservation_time = request.form.get('reservation_time')
+        table_id = request.form.get('table_id')
+
+        print(f"Guests: {guests}, Date: {reservation_date}, Time: {reservation_time}, Table ID: {table_id}")
+
+        # Establish connection to the SQL Server
+        db = Database()
+
+        db.make_reservation(1, reservation_date, reservation_time, guests, "now", "now", "Filled", table_id, "Nathan")
+
+        return jsonify({'message': 'Reservation successful!'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route("/checkInReservation", methods=['GET', 'POST'])
 def checkIn():

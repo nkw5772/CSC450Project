@@ -233,7 +233,7 @@
       <input type="time" id="reservation-time" name="reservation-time" required>
 
       <!-- Submit Button -->
-      <button type="submit" class="reserve-btn">Reserve Table</button>
+      <button type="button" class="reserve-btn" onclick=submitReservation()>Reserve Table</button>
   </div>
   
 
@@ -245,6 +245,28 @@
 
     function closePanel() {
       document.getElementById("sidePanel").classList.remove("open");
+    }
+    function submitReservation() {
+      const guests = document.getElementById("guests").value;
+      const reservationDate = document.getElementById("reservation-date").value;
+      const reservationTime = document.getElementById("reservation-time").value;
+      const tableId = document.getElementById("sidePanel").dataset.tableId;
+
+      // Perform the AJAX request
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/reserve", true);
+      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+      xhr.onload = function () {
+        if (xhr.status === 200) {
+          alert("Reservation successful!");
+          closePanel();  // Close the side panel on success
+        } else {
+          alert("Error: " + xhr.responseText);
+        }
+      };
+
+      xhr.send(`guests=${guests}&reservation_date=${reservationDate}&reservation_time=${reservationTime}&table_id=${tableId}`);
     }
   </script>
 </body>
