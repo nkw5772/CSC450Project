@@ -92,10 +92,13 @@ def reserve_table():
         reservation_time = request.form.get('reservation_time')
         table_id = request.form.get('table_id')
 
-        print(f"Guests: {guests}, Date: {reservation_date}, Time: {reservation_time}, Table ID: {table_id}")
-
         # Establish connection to the SQL Server
         db = Database()
+
+        if db.check_reservation_conflict(table_id, reservation_date, reservation_time):
+            return jsonify({'error': 'This table is already reserved at the selected time. Please choose another time or table.'}), 409
+
+        print(f"Guests: {guests}, Date: {reservation_date}, Time: {reservation_time}, Table ID: {table_id}")
 
         db.make_reservation(1, reservation_date, reservation_time, guests, "now", "now", "Filled", table_id, "Nathan")
 
@@ -105,15 +108,20 @@ def reserve_table():
 
 @app.route("/checkInReservation", methods=['GET', 'POST'])
 def checkIn():
-    # Checks in reservation
     if request.method == 'POST':
         db = Database()
-
         last_name = request.form.get('last_name')
         resSearch = db.check_in_search(last_name)
-        return render_template('checkInReservation.html', resSearch = resSearch)
+        
+        # Check if no results were found
+        if not resSearch:
+            error = "No reservation with the provided name."
+            return render_template('checkInReservation.html', resSearch=None, error=error)
+        
+        return render_template('checkInReservation.html', resSearch=resSearch)
 
     return render_template('checkInReservation.html')
+
 
 # Route to perform the actual check-in action by updating reservation status
 @app.route("/confirmCheckIn", methods=['POST'])

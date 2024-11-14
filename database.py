@@ -48,13 +48,13 @@ class Database:
         command = """
         SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.TableID 
         FROM Account a, Reservation r 
-        WHERE r.ResOwner = a.AccountID AND AccountLN = ?
+        WHERE r.ResOwner = a.AccountID AND LOWER(AccountLN) = ?
         """
-        params = (last_name,)
+        params = (last_name.lower(),)
         self.cursor.execute(command, params)
         results = self.cursor.fetchall()
         if len(results) <= 0:
-            return None
+            return []
         return results
     
     def make_reservation(self, ResDate, ResTime, ResNoGuests, TableID):
@@ -194,6 +194,34 @@ class Database:
         finally:
             server.quit()
 
+    def unreserve_table(self, reservation_id):
+        command = """UPDATE Seating
+                            SET CurrentReservation = NULL
+                            WHERE TableID = (SELECT TableID FROM Reservation WHERE ResID = ?);
+                            """
+        params = (reservation_id,)
+        self.cursor.execute(command, params)
+        self.database.commit()
+
+    def check_reservation_conflict(self, table_id, reservation_date, reservation_time):
+        try:
+            # Query for overlapping reservations (within an hour)
+            query = """
+                SELECT COUNT(*)
+                FROM Reservation
+                WHERE TableID = ?
+                AND ResDate = ?
+                AND (
+                    (ResTime <= ? AND DATETIME(ResTime, '+60 minutes') > ?)
+                    OR (ResTime >= ? AND DATETIME(?, '+60 minutes') > ResTime)
+                )
+            """
+            self.cursor.execute(query, (table_id, reservation_date, reservation_time, reservation_time, reservation_time, reservation_time))
+            result = self.cursor.fetchone()
+            return result[0] > 0  # True if there is a conflicting reservation
+        except Exception as e:
+            print(f"Error checking reservation conflict: {e}")
+            return False
 
     def handle_no_shows(self):
         command = """UPDATE Reservation
@@ -203,16 +231,6 @@ class Database:
 
         # Keep this at the very end of this function
         self.database.commit()
-    
-    def unreserve_table(self, reservation_id):
-        command = """UPDATE Seating
-                            SET CurrentReservation = NULL
-                            WHERE TableID = (SELECT TableID FROM Reservation WHERE ResID = ?);
-                            """
-        params = (reservation_id,)
-        self.cursor.execute(command, params)
-        self.database.commit()
-        
 
 # Keeping old code for if/when we switch back to MySQL
 '''
