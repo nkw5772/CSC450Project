@@ -108,15 +108,20 @@ def reserve_table():
 
 @app.route("/checkInReservation", methods=['GET', 'POST'])
 def checkIn():
-    # Checks in reservation
     if request.method == 'POST':
         db = Database()
-
         last_name = request.form.get('last_name')
         resSearch = db.check_in_search(last_name)
-        return render_template('checkInReservation.html', resSearch = resSearch)
+        
+        # Check if no results were found
+        if not resSearch:
+            error = "No reservation with the provided name."
+            return render_template('checkInReservation.html', resSearch=None, error=error)
+        
+        return render_template('checkInReservation.html', resSearch=resSearch)
 
     return render_template('checkInReservation.html')
+
 
 # Route to perform the actual check-in action by updating reservation status
 @app.route("/confirmCheckIn", methods=['POST'])

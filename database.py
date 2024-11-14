@@ -48,13 +48,13 @@ class Database:
         command = """
         SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.TableID 
         FROM Account a, Reservation r 
-        WHERE r.ResOwner = a.AccountID AND AccountLN = ?
+        WHERE r.ResOwner = a.AccountID AND LOWER(AccountLN) = ?
         """
-        params = (last_name,)
+        params = (last_name.lower(),)
         self.cursor.execute(command, params)
         results = self.cursor.fetchall()
         if len(results) <= 0:
-            return None
+            return []
         return results
 
  # Check-in a reservation by updating both Reservation and Seating tables
