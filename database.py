@@ -56,6 +56,20 @@ class Database:
         if len(results) <= 0:
             return None
         return results
+    
+    def make_reservation(self, ResDate, ResTime, ResNoGuests, TableID):
+        ResID = 1 # Temporary hard code
+        TimeCreated = datetime.now()
+        TimeUpdated = TimeCreated
+        ResStatus = "Pending" # Idk the different status' so open to change
+        ResOwner = "Nathan" # Temporary hard code until we can figure out how to get the name from the cookie
+        create_reservation = """
+        INSERT INTO Reservation (ResID, ResDate, ResTime, ResNoGuests, TimeCreated, TimeUpdated, ResStatus, TableID, ResOwner)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        self.cursor.execute(create_reservation, (ResID, ResDate, ResTime, ResNoGuests, TimeCreated, TimeUpdated, ResStatus, TableID, ResOwner))
+        self.database.commit()
+
 
  # Check-in a reservation by updating both Reservation and Seating tables
     def check_in_reservation(self, reservation_id):
@@ -83,6 +97,17 @@ class Database:
             print("Error checking in reservation:", e)
             self.database.rollback()
             return False
+    
+    # This is kinda a guess until we get a proper ordering page up
+    # Still need to figure out how we are gunna do expiration date and stuff, maybe make a file for holding each item data?
+    def order_meat(self, item, quantity):
+        query = """
+        INSERT INTO Inventory (Item, Quantity)
+        VALUES (?, ?)
+        """
+        self.cursor.execute(query, (item, quantity))
+        self.database.commit()
+
 
     def add_account(self, first_name: str, last_name: str, type: str, email: str, phone: str, created_date: str, password: str):
         command = """
