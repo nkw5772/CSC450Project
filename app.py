@@ -1,5 +1,5 @@
 
-from flask import Flask, render_template, redirect, url_for, request, jsonify, session, make_response
+from flask import Flask, render_template, redirect, flash, url_for, request, jsonify, session, make_response
 from hashlib import sha256
 from database import Database
 from datetime import datetime
@@ -55,9 +55,9 @@ def login():
         # Check if the credentials are correct
         if db.verify_login(email, password_hash): 
             # Creates a cookie for user when they login
-            resp = make_response(redirect(url_for('home')))
             session['email'] = email
-            return resp
+            session['account_type'] = db.get_account_type(email)
+            return redirect(url_for('home'))
         else:
             # Show an error message if credentials are incorrect
             error_message = "Invalid username or password. Please try again."
@@ -121,6 +121,9 @@ def reserve_table():
 
 @app.route("/checkInReservation", methods=['GET', 'POST'])
 def checkIn():
+    if 'email' not in session or session['account_type'] != 'employee':
+        flash('Sorry, you do not have permission to view that page.')
+        return redirect(url_for('home'))
     if request.method == 'POST':
         db = Database()
         last_name = request.form.get('last_name')
@@ -201,7 +204,7 @@ def createAccount():
             return render_template('createAccount.html', error_messages=error_messages)
         else:
             today = datetime.today().strftime('%Y-%m-%d')
-            db.add_account(first_name, last_name, 'Customer', email, phone_number, today, password_hash)
+            db.add_account(first_name, last_name, 'customer', email, phone_number, today, password_hash)
             # return render_template('home.html', message=f"Welcome {first_name}!") # I wanna be able to redirect with parameters (haven't researched much yet)
             return redirect(url_for('home', login_sucess=True))
 
