@@ -7,7 +7,7 @@
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <style>
         .alert {
-            padding: 10px;
+            padding: 10px 0px 10px 10px;
             margin-top: 10px;
             border-radius: 5px;
             font-weight: bold;
@@ -15,6 +15,7 @@
             width: 100%;
             bottom: 0;
             left: 0;
+            z-index: 1;
         }
         .alert-success {
             background-color: #d4edda;
@@ -28,14 +29,15 @@
         }
 
         .closebtn {
-            margin-left: 15px;
-            color: white;
+            margin-right: 15px;
+            color: rgb(0, 0, 0);
             font-weight: bold;
             float: right;
             font-size: 22px;
             line-height: 20px;
             cursor: pointer;
             transition: 0.3s;
+            z-index: 2;
         }
 
         .closebtn:hover {
