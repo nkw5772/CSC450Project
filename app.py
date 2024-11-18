@@ -13,13 +13,16 @@ import os
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"  # Secret key for session management
-limiter = Limiter(app)
+app.config['SESSION_COOKIE_SAMESITE'] = 'Strict' # Blocks cross-site cookies
+
 
 limiter = Limiter(
     get_remote_address,  # This will use the user's IP to track rate limits
     app=app,
-    default_limits=["5 per minute", ]  # Default limits for all routes
+    default_limits=["15 per second", ]  # Default limits for all routes
 )
+
+disable_login_limit = False # Toggles whether login attempt rate is limited (enable if needed for testing)
 
 # Define the route for the login page
 # This page is the root page of the application
@@ -37,12 +40,10 @@ def login():
     current_time = time.time()
     session['login_attempts'] = [t for t in session['login_attempts'] if current_time - t < 60]  # Keep only attempts within the last 60 seconds
 
+
     # Check if the user has exceeded the limit
     if len(session['login_attempts']) >= 5:
-        return jsonify({"error": "Too many login attempts. Please try again later."}), 429
-
-    # Add the current attempt timestamp
-    session['login_attempts'].append(current_time)
+        return render_template('login.html', error_message="Too many login attempts. Please try again later")
     
     #ACTUAL LOGIN LOGIC
     if request.method == 'POST':
@@ -59,9 +60,16 @@ def login():
             session['account_type'] = db.get_account_type(email)
             return redirect(url_for('home'))
         else:
-            # Show an error message if credentials are incorrect
-            error_message = "Invalid username or password. Please try again."
-            return render_template('login.html', error_message=error_message)
+            # Add the current attempt timestamp for invalid login
+            if not disable_login_limit:
+                session['login_attempts'].append(current_time)
+            if len(session['login_attempts']) >= 5:
+                return render_template('login.html', error_message="Too many login attempts. Please try again later")
+            else:
+                # Show an error message if credentials are incorrect
+                error_message = "Invalid username or password. Please try again."
+                return render_template('login.html', error_message=error_message)
+
 
     # If it's a GET request, render the login page
     return render_template('login.html')
@@ -138,7 +146,6 @@ def checkIn():
 
     return render_template('checkInReservation.html')
 
-
 # Route to perform the actual check-in action by updating reservation status
 @app.route("/confirmCheckIn", methods=['POST'])
 def confirmCheckIn():
@@ -213,11 +220,6 @@ def createAccount():
     # db.send_email('judevargas222@gmail.com')
     return render_template('createAccount.html')
 
-@app.errorhandler(429)
-def ratelimit_handler(e):
-    error_message = "Too many login attempts. Please try again later"
-    return render_template('login.html', error_message=error_message)
-
 """
 # Triggered before every request (GET/POST) and checks if session account type matches database and flags if not
 @app.before_request
@@ -245,7 +247,10 @@ def refresh_app():
 """
 
 def check_stuff():
-    threading.Timer(60, check_stuff).start()
+    try:
+        threading.Timer(60, check_stuff).start()
+    except RuntimeError:
+        pass # Do nothing, just prevent a pointless error in console
 
     db = Database()
     db.remind_reservations()
@@ -254,4 +259,4 @@ def check_stuff():
 if __name__ == '__main__':
     check_stuff()
     # threading.Thread(target=refresh_app, daemon=True).start()
-    app.run(debug=True)
+    app.run(debug=True) # Ok so setting debug=True gives a random Windows error that idk how to suppress, BUT it doesn't make the error when debug=False
