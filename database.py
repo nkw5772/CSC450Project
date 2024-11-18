@@ -24,8 +24,9 @@ class Database:
     
     def __del__(self):
         self.cursor.close()
+    ###
     #endregion DB CONNECTION
-
+    ###
 
     ###
     #region USER AUTHENTICATION
@@ -60,7 +61,46 @@ class Database:
         if self.cursor.fetchone()[0] <= 0:
             return True
         return False
-#endregion USER AUTHENTICATION
+    
+    def verify_login(self, email, password): # Maybe add extra check for phone number to sign in with either?
+        self.cursor.execute("SELECT PasswordHash FROM Account WHERE AccountEmail = ?", (email,))
+        
+        result = self.cursor.fetchone()
+        if result is None:
+            return False
+        if result[0] == password:
+            return True
+        return False
+        
+    def get_account_type(self, email: str) -> str:
+        command = "SELECT AccountType FROM Account WHERE AccountEmail = ?"
+        params = (email,)
+        self.cursor.execute(command, params)
+        return self.cursor.fetchone()[0]
+    
+    def get_name_from_email(self, email: str) -> tuple:
+        command = """
+        SELECT AccountFN, AccountLN
+        FROM Account
+        WHERE AccountEmail = ?
+        """
+        params = (email,)
+        self.cursor.execute(command, params)
+        return self.cursor.fetchone()
+    
+    def get_id_from_email(self, email: str) -> int:
+        command = """
+        SELECT AccountID
+        FROM Account
+        WHERE AccountEmail = ?
+        """
+        params = (email,)
+        self.cursor.execute(command, params)
+        return self.cursor.fetchone()[0]
+
+    ###
+    #endregion USER AUTHENTICATION
+    ###
 
     ###
     #region  RESERVATIONS
@@ -121,17 +161,6 @@ class Database:
             print("Error checking in reservation:", e)
             self.database.rollback()
             return False
-    
-    # This is kinda a guess until we get a proper ordering page up
-    # Still need to figure out how we are gunna do expiration date and stuff, maybe make a file for holding each item data?
-    def order_meat(self, item, quantity):
-        query = """
-        INSERT INTO Inventory (Item, Quantity)
-        VALUES (?, ?)
-        """
-        self.cursor.execute(query, (item, quantity))
-        self.database.commit()
-
 
     def make_reservation(self, reservation_date, reservation_time, guests, TimeCreated, TimeUpdated, ResStatus, table_id, ResOwner):
         command = """
@@ -187,10 +216,25 @@ class Database:
         params = (res_id,)
         self.cursor.execute(command, params)
         return self.cursor.fetchone()
+    
+    ###
     #endregion RESERVATIONS
+    ###
+    
+    # This is kinda a guess until we get a proper ordering page up
+    # Still need to figure out how we are gunna do expiration date and stuff, maybe make a file for holding each item data?
+    def order_meat(self, item, quantity):
+        query = """
+        INSERT INTO Inventory (Item, Quantity)
+        VALUES (?, ?)
+        """
+        self.cursor.execute(query, (item, quantity))
+        self.database.commit()
 
     # INSERT INTO Reservation (ResDate, ResTime, ResNoGuests, TimeCreated, TimeUpdated, ResStatus, TableID, ResOwner)
     # VALUES ("2024-11-12", "00:04:00", 3, "08:23:42", "08:23:42", "Ready", 1, 1)
+
+
     # def verify_exists(self, email):
     #     self.cursor.execute("SELECT PasswordHash FROM Account WHERE AccountEmail = ?", (email,))
     
@@ -201,43 +245,6 @@ class Database:
     #     if result is None:
     #     # Email does not exist, return False
     #         return False
-    
-    def verify_login(self, email, password): # Maybe add extra check for phone number to sign in with either?
-        
-        self.cursor.execute("SELECT PasswordHash FROM Account WHERE AccountEmail = ?", (email,))
-        
-        result = self.cursor.fetchone()
-        if result is None:
-            return False
-        if result[0] == password:
-            return True
-        return False
-        
-    def get_account_type(self, email: str) -> str:
-        command = "SELECT AccountType FROM Account WHERE AccountEmail = ?"
-        params = (email,)
-        self.cursor.execute(command, params)
-        return self.cursor.fetchone()[0]
-    
-    def get_name_from_email(self, email: str) -> tuple:
-        command = """
-        SELECT AccountFN, AccountLN
-        FROM Account
-        WHERE AccountEmail = ?
-        """
-        params = (email,)
-        self.cursor.execute(command, params)
-        return self.cursor.fetchone()
-    
-    def get_id_from_email(self, email: str) -> int:
-        command = """
-        SELECT AccountID
-        FROM Account
-        WHERE AccountEmail = ?
-        """
-        params = (email,)
-        self.cursor.execute(command, params)
-        return self.cursor.fetchone()[0]
 
     def send_email(self, recipient_address, subject, body):
         # Gmail SMTP server setup
