@@ -30,6 +30,8 @@ disable_login_limit = False # Toggles whether login attempt rate is limited (ena
 @app.route('/', methods=['GET', 'POST'])
 # @limiter.limit("5 per minute")
 def login():
+    
+   
     session.clear()
     # if 'email' in session:
     #     return redirect(url_for('home'))
@@ -62,11 +64,9 @@ def login():
             # Creates a cookie for user when they login
             resp = make_response(redirect(url_for('home')))
             session['email'] = email
-            session['login_attempts'] = [t for t in session['login_attempts'] if current_time - t < 60]  # Keep only attempts within the last 60 seconds
-            if len(session['login_attempts']) >= 5:
-                return render_template('login.html', error_message="Too many login attempts. Please try again later")
+            
             return redirect(url_for("home"))
-        else:
+        
             # Add the current attempt timestamp for invalid login
             # if not disable_login_limit:
             #     session['login_attempts'].append(current_time)
@@ -74,12 +74,11 @@ def login():
             # if len(session['login_attempts']) >= 5:
             #     return render_template('login.html', error_message="Too many login attempts. Please try again later")
             #THIS^
-            if "hello" != "hello":
-                print("hi")
-            else:
+            
+        else:
                 # Show an error message if credentials are incorrect
-                error_message = "Invalid username or password. Please try again."
-                return render_template('login.html', error_message=error_message)
+            error_message = "Invalid username or password. Please try again."
+            return render_template('login.html', error_message=error_message)
 
 
     # If it's a GET request, render the login page
@@ -292,6 +291,10 @@ def check_stuff():
     db = Database()
     db.remind_reservations()
     # db.handle_no_shows()
+
+@app.errorhandler(429)
+def ratelimit_error(e):
+    return render_template('login.html', error_message="Too many login attempts. Please try again later."), 429
 
 if __name__ == '__main__':
     check_stuff()
