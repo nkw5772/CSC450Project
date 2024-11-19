@@ -55,7 +55,7 @@ def login():
         email = request.form.get('email')
         # password = request.form.get('password')
         password_hash = sha256(request.form.get('password').encode('utf-8')).hexdigest()
-        print(db.get_account_type(email))
+        
         # Check if the credentials are correct
         if db.verify_login(email, password_hash) == True: 
             # Creates a cookie for user when they login
@@ -67,8 +67,9 @@ def login():
             # Add the current attempt timestamp for invalid login
             if not disable_login_limit:
                 session['login_attempts'].append(current_time)
-            # if len(session['login_attempts']) >= 5:
-            #     return render_template('login.html', error_message="Too many login attempts. Please try again later")
+            
+            if len(session['login_attempts']) >= 5:
+                return render_template('login.html', error_message="Too many login attempts. Please try again later")
             else:
                 # Show an error message if credentials are incorrect
                 error_message = "Invalid username or password. Please try again."
