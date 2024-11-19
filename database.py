@@ -298,13 +298,53 @@ class Database:
     ###
     # This is kinda a guess until we get a proper ordering page up
     # Still need to figure out how we are gunna do expiration date and stuff, maybe make a file for holding each item data?
-    def order_meat(self, item, quantity):
+    def order_meat(self, item, size, quantity, expiration_date):
         query = """
-        INSERT INTO Inventory (Item, Quantity)
-        VALUES (?, ?)
+        INSERT INTO Inventory (Item, Size, Quantity, Expiration_Date)
+        VALUES (?, ?, ?, ?)
         """
-        self.cursor.execute(query, (item, quantity))
+        if self.checkInventory(item, size, expiration_date):
+            query = """
+            UPDATE INVENTORY SET
+            QUANTITY = ?
+            WHERE
+            ITEM = ?
+            AND SIZE = ?
+            AND EXPIRATION_DATE = ?
+            """
+            quantity += self.getQuantity(item, size, expiration_date)
+            self.cursor.execute(query, (quantity, item, size, expiration_date))
+
+        else:
+            self.cursor.execute(query, (item, size, quantity, expiration_date))
         self.database.commit()
+    
+    def checkInventory(self, item, size, expiration_date):
+        query = """
+        SELECT *
+        FROM INVENTORY
+        WHERE
+        ITEM = ?
+        AND SIZE = ?
+        AND EXPIRATION_DATE = ?
+        """
+        self.cursor.execute(query, (item, size, expiration_date))
+        if self.cursor.fetchall():
+            return True
+        return False
+
+    def getQuantity(self, item, size, expiration_date):
+        query = """
+        SELECT QUANTITY
+        FROM Inventory
+        WHERE
+        ITEM = ?
+        AND SIZE = ?
+        AND EXPIRATION_DATE = ?
+        """
+        self.cursor.execute(query, (item, size, expiration_date))
+        quantity = self.cursor.fetchall()[0][0]
+        return quantity
     ###
     #endregion INVENTORY
     ###
