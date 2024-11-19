@@ -35,11 +35,13 @@ def login():
     # Track login attempts using sessions
     if 'login_attempts' not in session:
         session['login_attempts'] = []
-
+    
+        
     # Record the current timestamp for each attempt
     current_time = time.time()
     session['login_attempts'] = [t for t in session['login_attempts'] if current_time - t < 60]  # Keep only attempts within the last 60 seconds
-
+    hello = False
+    
 
     # Check if the user has exceeded the limit
     if len(session['login_attempts']) >= 5:
@@ -52,12 +54,13 @@ def login():
         email = request.form.get('email')
         # password = request.form.get('password')
         password_hash = sha256(request.form.get('password').encode('utf-8')).hexdigest()
-        
+        print(db.get_account_type(email))
         # Check if the credentials are correct
         if db.verify_login(email, password_hash): 
             # Creates a cookie for user when they login
             resp = make_response(redirect(url_for('home')))
             session['email'] = email
+            
             return resp
         else:
             # Add the current attempt timestamp for invalid login
@@ -129,18 +132,25 @@ def reserve_table():
 
 @app.route("/checkInReservation", methods=['GET', 'POST'])
 def checkIn():
+    db = Database()
+    #ROLE CHECKINGGGGGGGG
+    # user_role = db.get_account_type(session['email'])
+    # if user_role == "Employee":
+    #     return jsonify({'message': 'Reservation successful!'}), 200
+    
     if request.method == 'POST':
         db = Database()
         last_name = request.form.get('last_name')
         resSearch = db.check_in_search(last_name)
-        
+    
+    
         # Check if no results were found
         if not resSearch:
             error = "No reservation with the provided name."
             return render_template('checkInReservation.html', resSearch=None, error=error)
         
         return render_template('checkInReservation.html', resSearch=resSearch)
-
+    
     return render_template('checkInReservation.html')
 
 # Route to perform the actual check-in action by updating reservation status
