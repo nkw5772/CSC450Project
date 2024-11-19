@@ -42,7 +42,11 @@ class Database:
         self.database.commit()
 
     def email_is_unique(self, email: str) -> bool:
-        command = "SELECT COUNT(*) FROM Account WHERE AccountEmail = ?"
+        command = """
+        SELECT COUNT(*)
+        FROM Account
+        WHERE AccountEmail = ?
+        """
         params = (email,)
         self.cursor.execute(command, params)
         if self.cursor.fetchone()[0] <= 0: # Returns a tuple, so gotta index to get value
@@ -265,12 +269,13 @@ class Database:
             self.send_email(row[0], subject, body)
 
     def handle_no_shows(self):
-        command = """SELECT a.AccountEmail, r.ResID FROM Account a, Reservation r             
-                    WHERE a.AccountID = r.ResID
-                    AND r.ResStatus = "ready"
-                    AND r.ResDate < ?
-                    OR (r.ResDate = ? AND r.ResTime < ?)
-                    """
+        command = """
+        SELECT a.AccountEmail, r.ResID FROM Account a, Reservation r             
+        WHERE a.AccountID = r.ResID
+        AND r.ResStatus = "ready"
+        AND r.ResDate < ?
+        OR (r.ResDate = ? AND r.ResTime < ?)
+        """
         today = datetime.today().strftime('%Y-%m-%d')
         noshow_threshold = (datetime.now() - timedelta(minutes=10)).strftime('%H:%M:%S')
         params = (today, today, noshow_threshold)
@@ -286,6 +291,23 @@ class Database:
         self.database.commit()
     ###
     #endregion RECURRING
+    ###
+
+    ###
+    #region INVENTORY
+    ###
+    
+    # This is kinda a guess until we get a proper ordering page up
+    # Still need to figure out how we are gunna do expiration date and stuff, maybe make a file for holding each item data?
+    def order_meat(self, item, quantity):
+        query = """
+        INSERT INTO Inventory (Item, Quantity)
+        VALUES (?, ?)
+        """
+        self.cursor.execute(query, (item, quantity))
+        self.database.commit()
+    ###
+    #endregion INVENTORY
     ###
 
     ###
@@ -317,16 +339,6 @@ class Database:
             print(f"An error occurred: {e}")
         finally:
             server.quit()
-
-    # This is kinda a guess until we get a proper ordering page up
-    # Still need to figure out how we are gunna do expiration date and stuff, maybe make a file for holding each item data?
-    def order_meat(self, item, quantity):
-        query = """
-        INSERT INTO Inventory (Item, Quantity)
-        VALUES (?, ?)
-        """
-        self.cursor.execute(query, (item, quantity))
-        self.database.commit()
     ###
     #endregion MISC
     ###
