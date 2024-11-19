@@ -58,6 +58,7 @@ def login():
         # Check if the credentials are correct
         if db.verify_login(email, password_hash): 
             # Creates a cookie for user when they login
+            resp = make_response(redirect(url_for('home')))
             session['email'] = email
             
             return resp
