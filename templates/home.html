@@ -3,22 +3,102 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Home</title>
+        <title>Home Page</title>
         <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+        <style>
+            body {
+                margin: 0;
+                font-family: Arial, sans-serif;
+                background-color: #f2f2f2;
+            }
+
+            .navbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background-color: #1181f5;
+                color: #ffffff;
+                padding: 10px 20px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                position: sticky;
+                top: 0;
+                width: 100%;
+            }
+
+            .navbar a {
+                color: #ffffff;
+                text-decoration: none;
+                margin: 0 15px;
+                font-size: 16px;
+                transition: color 0.3s;
+            }
+
+            .navbar a:hover {
+                color: #ff6600;
+            }
+
+            .brand {
+                font-size: 20px;
+                font-weight: bold;
+            }
+
+            .home-container {
+                background-color: #ffffff;
+                padding: 30px;
+                border-radius: 10px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                text-align: center;
+                width: 400px;
+                margin: 40px auto; /* Centers the content horizontally */
+            }
+
+            h1 {
+                color: #1181f5;
+                font-size: 30px;
+                margin-bottom: 20px;
+            }
+
+            p {
+                color: #333333;
+                margin-bottom: 20px;
+                font-size: 16px;
+            }
+
+            a {
+                display: inline-block;
+                margin: 10px 0;
+                padding: 10px 20px;
+                background-color: #ff6600;
+                color: #ffffff;
+                text-decoration: none;
+                border-radius: 5px;
+                font-size: 16px;
+                transition: background-color 0.3s;
+            }
+
+            a:hover {
+                background-color: #e65c00;
+            }
+        </style>
     </head>
     <body>
-        <h3>Hello! You are logged in.</h3>
-        <a href="{{ url_for('logout') }}">
-            <button>Logout</button>
-        </a>
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <ul>
-                    {% for message in messages %}
-                        <li>{{ message }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        {% endwith %}
+        <div class="navbar">
+            <div class="brand">CSC450Project</div>
+            <div>
+                <a href="/home">Home</a>                
+                {% if session.get('email') %}
+                    <a href="/myReservations">My Reservations</a>
+                    <a href="/logout">Logout</a>
+                {% else %}
+                    <a href="/login">Login</a>
+                {% endif %}                
+            </div>
+        </div>
+        <div class="home-container">
+            <h1>Welcome to Our Website!</h1>
+            <p>Explore our features or log in to access your account.</p>
+            <a href="/">Login</a>
+            <a href="/myReservations">Reserve</a>
+        </div>
     </body>
 </html>

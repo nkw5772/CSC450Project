@@ -296,7 +296,6 @@ class Database:
     ###
     #region INVENTORY
     ###
-    
     # This is kinda a guess until we get a proper ordering page up
     # Still need to figure out how we are gunna do expiration date and stuff, maybe make a file for holding each item data?
     def order_meat(self, item, quantity):

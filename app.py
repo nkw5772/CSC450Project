@@ -168,7 +168,7 @@ def confirmCheckIn():
 @app.route('/myReservations', methods=['GET', 'POST'])
 def my_reservations():
     db = Database()
-            
+    
     name = db.get_name_from_email(session['email'])[0]
     reservations = db.get_user_reservations(session['email'])
 
