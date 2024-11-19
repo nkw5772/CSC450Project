@@ -19,7 +19,7 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Strict' # Blocks cross-site cookies
 limiter = Limiter(
     get_remote_address,  # This will use the user's IP to track rate limits
     app=app,
-    default_limits=["15 per second", ]  # Default limits for all routes
+    default_limits=["5 per minute", ]  # Default limits for all routes
 )
 
 disable_login_limit = False # Toggles whether login attempt rate is limited (enable if needed for testing)
@@ -30,24 +30,25 @@ disable_login_limit = False # Toggles whether login attempt rate is limited (ena
 @app.route('/', methods=['GET', 'POST'])
 # @limiter.limit("5 per minute")
 def login():
-    if 'email' in session:
-        return redirect(url_for('home'))
-    # Track login attempts using sessions
-    if 'login_attempts' not in session:
-        session['login_attempts'] = []
-    
+    session.clear()
+    # if 'email' in session:
+    #     return redirect(url_for('home'))
+    # # Track login attempts using sessions
+    # if 'login_attempts' not in session:
+    #     session['login_attempts'] = []
+    #ALL THIS^^^^^^^
         
     # Record the current timestamp for each attempt
     current_time = time.time()
     
-    session['login_attempts'] = [t for t in session['login_attempts'] if current_time - t < 60]  # Keep only attempts within the last 60 seconds
-    
+    # session['login_attempts'] = [t for t in session['login_attempts'] if current_time - t < 60]  # Keep only attempts within the last 60 seconds
+    #THIS^
     
 
-    # Check if the user has exceeded the limit
-    if len(session['login_attempts']) >= 5:
-        return render_template('login.html', error_message="Too many login attempts. Please try again later")
-    
+    # # Check if the user has exceeded the limit
+    # if len(session['login_attempts']) >= 5:
+    #     return render_template('login.html', error_message="Too many login attempts. Please try again later")
+    #THIS^
     #ACTUAL LOGIN LOGIC
     if request.method == 'POST':
         db = Database()
@@ -61,15 +62,20 @@ def login():
             # Creates a cookie for user when they login
             resp = make_response(redirect(url_for('home')))
             session['email'] = email
-            
+            session['login_attempts'] = [t for t in session['login_attempts'] if current_time - t < 60]  # Keep only attempts within the last 60 seconds
+            if len(session['login_attempts']) >= 5:
+                return render_template('login.html', error_message="Too many login attempts. Please try again later")
             return redirect(url_for("home"))
         else:
             # Add the current attempt timestamp for invalid login
-            if not disable_login_limit:
-                session['login_attempts'].append(current_time)
+            # if not disable_login_limit:
+            #     session['login_attempts'].append(current_time)
             
-            if len(session['login_attempts']) >= 5:
-                return render_template('login.html', error_message="Too many login attempts. Please try again later")
+            # if len(session['login_attempts']) >= 5:
+            #     return render_template('login.html', error_message="Too many login attempts. Please try again later")
+            #THIS^
+            if "hello" != "hello":
+                print("hi")
             else:
                 # Show an error message if credentials are incorrect
                 error_message = "Invalid username or password. Please try again."
@@ -116,6 +122,8 @@ def submitorder():
 
 @app.route("/reservation", methods=['GET', 'POST'])
 def reservations():
+    if 'email' not in session:
+        return redirect(url_for('login'))
     if request.method == 'POST': # When modifying a res through /myReservations
         res_id = request.form.get('reservation_id')
         return render_template('reservation.html', res_id = res_id)
