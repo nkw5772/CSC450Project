@@ -24,8 +24,9 @@ class Database:
     
     def __del__(self):
         self.cursor.close()
+    ###
     #endregion DB CONNECTION
-
+    ###
 
     ###
     #region USER AUTHENTICATION
@@ -41,7 +42,11 @@ class Database:
         self.database.commit()
 
     def email_is_unique(self, email: str) -> bool:
-        command = "SELECT COUNT(*) FROM Account WHERE AccountEmail = ?"
+        command = """
+        SELECT COUNT(*)
+        FROM Account
+        WHERE AccountEmail = ?
+        """
         params = (email,)
         self.cursor.execute(command, params)
         if self.cursor.fetchone()[0] <= 0: # Returns a tuple, so gotta index to get value
@@ -60,14 +65,57 @@ class Database:
         if self.cursor.fetchone()[0] <= 0:
             return True
         return False
-#endregion USER AUTHENTICATION
+    
+    def verify_login(self, email, password): # Maybe add extra check for phone number to sign in with either?
+        self.cursor.execute("SELECT PasswordHash FROM Account WHERE AccountEmail = ?", (email,))
+        
+        result = self.cursor.fetchone()
+        if result is None:
+            return False
+        if result[0] == password:
+            return True
+        return False
+        
+    def get_account_type(self, email: str) -> str:
+        command = """
+        SELECT AccountType
+        FROM Account
+        WHERE AccountEmail = ?
+        """
+        params = (email,)
+        self.cursor.execute(command, params)
+        return self.cursor.fetchone()[0]
+    
+    def get_name_from_email(self, email: str) -> tuple:
+        command = """
+        SELECT AccountFN, AccountLN
+        FROM Account
+        WHERE AccountEmail = ?
+        """
+        params = (email,)
+        self.cursor.execute(command, params)
+        return self.cursor.fetchone()
+    
+    def get_id_from_email(self, email: str) -> int:
+        command = """
+        SELECT AccountID
+        FROM Account
+        WHERE AccountEmail = ?
+        """
+        params = (email,)
+        self.cursor.execute(command, params)
+        return self.cursor.fetchone()[0]
+
+    ###
+    #endregion USER AUTHENTICATION
+    ###
 
     ###
     #region  RESERVATIONS
     ###
     def check_in_search(self, last_name: str):
         command = """
-        SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.TableID 
+        SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.TableID, r.ResID 
         FROM Account a, Reservation r 
         WHERE r.ResOwner = a.AccountID AND LOWER(a.AccountLN) = ?
         """
@@ -98,12 +146,7 @@ class Database:
  # Check-in a reservation by updating both Reservation and Seating tables
     def check_in_reservation(self, reservation_id):
         try:
-            update_reservation = """
-            UPDATE Reservation
-            SET ResStatus = 'checked_in'
-            WHERE ResID = ?;
-            """
-            self.cursor.execute(update_reservation, (reservation_id,))
+            self.update_res_status(reservation_id, 'checked_in')
             print("Updated Reservation table for ResID:", reservation_id)
 
             update_seating = """
@@ -121,18 +164,27 @@ class Database:
             print("Error checking in reservation:", e)
             self.database.rollback()
             return False
-    
-    # This is kinda a guess until we get a proper ordering page up
-    # Still need to figure out how we are gunna do expiration date and stuff, maybe make a file for holding each item data?
-    def order_meat(self, item, quantity):
-        query = """
-        INSERT INTO Inventory (Item, Quantity)
-        VALUES (?, ?)
-        """
-        self.cursor.execute(query, (item, quantity))
-        self.database.commit()
 
-
+    def check_reservation_conflict(self, table_id, reservation_date, reservation_time):
+        try:
+            # Query for overlapping reservations (within an hour)
+            query = """
+            SELECT COUNT(*)
+            FROM Reservation
+            WHERE TableID = ?
+            AND ResDate = ?
+            AND (
+                (ResTime <= ? AND DATETIME(ResTime, '+60 minutes') > ?)
+                OR (ResTime >= ? AND DATETIME(?, '+60 minutes') > ResTime)
+            )
+            """
+            self.cursor.execute(query, (table_id, reservation_date, reservation_time, reservation_time, reservation_time, reservation_time))
+            result = self.cursor.fetchone()
+            return result[0] > 0  # True if there is a conflicting reservation
+        except Exception as e:
+            print(f"Error checking reservation conflict: {e}")
+            return True
+        
     def make_reservation(self, reservation_date, reservation_time, guests, TimeCreated, TimeUpdated, ResStatus, table_id, ResOwner):
         command = """
         INSERT INTO Reservation (ResDate, ResTime, ResNoGuests, TimeCreated, TimeUpdated, ResStatus, TableID, ResOwner)
@@ -158,14 +210,52 @@ class Database:
         self.cursor.execute(command, params)
         self.database.commit()
 
+    def get_res_from_id(self, res_id):
+        command = """
+        SELECT *
+        FROM Reservation
+        WHERE ResID = ?
+        """
+        params = (res_id,)
+        self.cursor.execute(command, params)
+        return self.cursor.fetchone()
+    
+    def update_res_status(self, reservation_id, new_status):
+        command = """
+        UPDATE Reservation
+        SET ResStatus = ?
+        WHERE ResID = ?
+        """
+        params = (new_status, reservation_id)
+        self.cursor.execute(command, params)
+        self.database.commit()
+
+    # I wanna replace this with an SQL trigger
+    def unreserve_table(self, reservation_id):
+        command = """
+        UPDATE Seating
+        SET CurrentReservation = NULL
+        WHERE TableID = (SELECT TableID FROM Reservation WHERE ResID = ?);
+        """
+        params = (reservation_id,)
+        self.cursor.execute(command, params)
+        self.database.commit()
+    ###
+    #endregion RESERVATIONS
+    ###
+
+    ###
+    #region RECURRING
+    ###
     def remind_reservations(self): # pw: csc team 2
-        command = """SELECT a.AccountEmail, a.AccountFN, r.ResTime
-                     FROM Account a, Reservation r
-                     WHERE a.AccountID = r.ResOwner
-                     AND r.ResStatus = "ready"
-                     AND r.ResDate = ?
-                     AND r.ResTime < ?
-                 """
+        command = """
+        SELECT a.AccountEmail, a.AccountFN, r.ResTime
+        FROM Account a, Reservation r
+        WHERE a.AccountID = r.ResOwner
+        AND r.ResStatus = "ready"
+        AND r.ResDate = ?
+        AND r.ResTime < ?
+        """
         today = datetime.today().strftime('%Y-%m-%d')
         remind_threshold = (datetime.now() + timedelta(minutes=30)).strftime('%H:%M"%S')
         self.cursor.execute(command, (today, remind_threshold))
@@ -178,67 +268,50 @@ class Database:
                 """
             self.send_email(row[0], subject, body)
 
-    def get_res_from_id(self, res_id):
+    def handle_no_shows(self):
         command = """
-        SELECT *
-        FROM Reservation
-        WHERE ResID = ?
+        SELECT a.AccountEmail, r.ResID FROM Account a, Reservation r             
+        WHERE a.AccountID = r.ResID
+        AND r.ResStatus = "ready"
+        AND r.ResDate < ?
+        OR (r.ResDate = ? AND r.ResTime < ?)
         """
-        params = (res_id,)
+        today = datetime.today().strftime('%Y-%m-%d')
+        noshow_threshold = (datetime.now() - timedelta(minutes=10)).strftime('%H:%M:%S')
+        params = (today, today, noshow_threshold)
         self.cursor.execute(command, params)
-        return self.cursor.fetchone()
-    #endregion RESERVATIONS
+        
+        for email, id in self.cursor.fetchall():
+            self.send_email(email, 'Reservation No-Show', 'Hello!\nYou recently missed a reservation, and it has been noted.')
+            self.update_res_status(id, "no_show")
+            self.unreserve_table(id)
+            print(f'Table with ID #{id} has been un-reserved.')
 
-    # INSERT INTO Reservation (ResDate, ResTime, ResNoGuests, TimeCreated, TimeUpdated, ResStatus, TableID, ResOwner)
-    # VALUES ("2024-11-12", "00:04:00", 3, "08:23:42", "08:23:42", "Ready", 1, 1)
-    # def verify_exists(self, email):
-    #     self.cursor.execute("SELECT PasswordHash FROM Account WHERE AccountEmail = ?", (email,))
-    
-    #     # Fetch the result
-    #     result = self.cursor.fetchone()
-    
-    #     # Check if the email exists in the database
-    #     if result is None:
-    #     # Email does not exist, return False
-    #         return False
-    
-    def verify_login(self, email, password): # Maybe add extra check for phone number to sign in with either?
-        
-        self.cursor.execute("SELECT PasswordHash FROM Account WHERE AccountEmail = ?", (email,))
-        
-        result = self.cursor.fetchone()
-        if result is None:
-            return False
-        if result[0] == password:
-            return True
-        return False
-        
-    def get_account_type(self, email: str) -> str:
-        command = "SELECT AccountType FROM Account WHERE AccountEmail = ?"
-        params = (email,)
-        self.cursor.execute(command, params)
-        return self.cursor.fetchone()[0]
-    
-    def get_name_from_email(self, email: str) -> tuple:
-        command = """
-        SELECT AccountFN, AccountLN
-        FROM Account
-        WHERE AccountEmail = ?
-        """
-        params = (email,)
-        self.cursor.execute(command, params)
-        return self.cursor.fetchone()
-    
-    def get_id_from_email(self, email: str) -> int:
-        command = """
-        SELECT AccountID
-        FROM Account
-        WHERE AccountEmail = ?
-        """
-        params = (email,)
-        self.cursor.execute(command, params)
-        return self.cursor.fetchone()[0]
+        # Keep this at the very end of this function
+        self.database.commit()
+    ###
+    #endregion RECURRING
+    ###
 
+    ###
+    #region INVENTORY
+    ###
+    # This is kinda a guess until we get a proper ordering page up
+    # Still need to figure out how we are gunna do expiration date and stuff, maybe make a file for holding each item data?
+    def order_meat(self, item, quantity):
+        query = """
+        INSERT INTO Inventory (Item, Quantity)
+        VALUES (?, ?)
+        """
+        self.cursor.execute(query, (item, quantity))
+        self.database.commit()
+    ###
+    #endregion INVENTORY
+    ###
+
+    ###
+    #region MISC
+    ###
     def send_email(self, recipient_address, subject, body):
         # Gmail SMTP server setup
         smtp_server = "smtp.gmail.com"
@@ -265,89 +338,37 @@ class Database:
             print(f"An error occurred: {e}")
         finally:
             server.quit()
+    ###
+    #endregion MISC
+    ###
 
-    def handle_no_shows(self):
-        command = """SELECT a.AccountEmail, r.ResID FROM Account a, Reservation r             
-                    WHERE a.AccountID = r.ResID
-                    AND r.ResStatus = "ready"
-                    AND r.ResDate < ?
-                    OR (r.ResDate = ? AND r.ResTime < ?)
-                    """
-        today = datetime.today().strftime('%Y-%m-%d')
-        noshow_threshold = (datetime.now() - timedelta(minutes=10)).strftime('%H:%M:%S')
-        params = (today, today, noshow_threshold)
-        self.cursor.execute(command, params)
-        
-        for email, id in self.cursor.fetchall():
-            self.send_email(email, 'Reservation No-Show', 'Hello!\nYou recently missed a reservation, and it has been noted.')
-            self.update_res_status(id, "no_show")
-            self.unreserve_table(id)
-            print(f'Table with ID #{id} has been un-reserved.')
-
-        # Keep this at the very end of this function
-        self.database.commit()
-    
-    def update_res_status(self, reservation_id, new_status):
-        command = """UPDATE Reservation
-                     SET ResStatus = ?
-                     WHERE ResID = ?
-                     """
-        params = (new_status, reservation_id)
-        self.cursor.execute(command, params)
-        self.database.commit()
-
-    # I wanna replace this with an SQL trigger
-    def unreserve_table(self, reservation_id):
-        command = """UPDATE Seating
-                            SET CurrentReservation = NULL
-                            WHERE TableID = (SELECT TableID FROM Reservation WHERE ResID = ?);
-                            """
-        params = (reservation_id,)
-        self.cursor.execute(command, params)
-        self.database.commit()
-    
-    def check_reservation_conflict(self, table_id, reservation_date, reservation_time):
-        try:
-            # Query for overlapping reservations (within an hour)
-            query = """
-                SELECT COUNT(*)
-                FROM Reservation
-                WHERE TableID = ?
-                AND ResDate = ?
-                AND (
-                    (ResTime <= ? AND DATETIME(ResTime, '+60 minutes') > ?)
-                    OR (ResTime >= ? AND DATETIME(?, '+60 minutes') > ResTime)
-                )
-            """
-            self.cursor.execute(query, (table_id, reservation_date, reservation_time, reservation_time, reservation_time, reservation_time))
-            result = self.cursor.fetchone()
-            return result[0] > 0  # True if there is a conflicting reservation
-        except Exception as e:
-            print(f"Error checking reservation conflict: {e}")
-            return False
-
-# Keeping old code for if/when we switch back to MySQL
-'''
-mydb = mysql.connector.connect(
+    ###
+    #region OLD CODE
+    ###
+    '''
+    mydb = mysql.connector.connect(
     host="inventory450.ctq4yuwac5s0.us-east-2.rds.amazonaws.com",
     user="admin",
     password="450Database!",
     database="mysql"
-)
+    )
 
-if mydb.is_connected():
+    if mydb.is_connected():
     print("Connected . . .\n")
 
-mycursor = mydb.cursor()
-'''
-'''
-for (account_email, password_hash) in mycursor:
+    mycursor = mydb.cursor()
+    '''
+    '''
+    for (account_email, password_hash) in mycursor:
     print(account_email, password_hash)
 
-try:
+    try:
     mycursor.execute(add_account_command, account_data)
     mydb.commit()
     print("LET'S GOOO!!!!")
-except Exception as e:
+    except Exception as e:
     print("It fucked up.\n", e)
-'''
+    '''
+    ###
+    #endregion OLD CODE
+    ###
