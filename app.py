@@ -2,7 +2,7 @@
 from flask import Flask, render_template, redirect, flash, url_for, request, jsonify, session, make_response
 from hashlib import sha256
 from database import Database
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import time
@@ -87,6 +87,28 @@ def home():
         return redirect(url_for('login'))
     return render_template('home.html')
 
+@app.route("/ordering", methods=['GET', 'POST'])
+def ordering():
+    # Need to make it so only employees can get here
+    return render_template('ordering.html')
+
+@app.route('/submitorder', methods=['POST'])
+def submitorder():
+    try:
+    # Gets data from ordering form
+        item = request.form.get('item')
+        size = request.form.get('size')
+        quantity = request.form.get('quantity')
+        expiration_date = (datetime.now() + timedelta(weeks=2)).date()
+
+        db = Database()
+
+
+        return jsonify({'message': 'Reservation successful!'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route("/reservation", methods=['GET', 'POST'])
 def reservations():
     if request.method == 'POST': # When modifying a res through /myReservations
@@ -104,8 +126,6 @@ def reserve_table():
         res_time = request.form.get('reservation_time')
         table_id = request.form.get('table_id')
         res_id = request.form.get('reservation_id', default = None)
-
-        print(f"Guests: {guests}, Date: {res_date}, Time: {res_time}, Table ID: {table_id}")
 
         # Establish connection to the SQL Server
         db = Database()
