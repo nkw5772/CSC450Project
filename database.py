@@ -107,7 +107,7 @@ class Database:
     ###
     def check_in_search(self, last_name: str):
         command = """
-        SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.TableID 
+        SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.TableID, r.ResID 
         FROM Account a, Reservation r 
         WHERE r.ResOwner = a.AccountID AND LOWER(a.AccountLN) = ?
         """
