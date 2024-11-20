@@ -30,26 +30,24 @@ disable_login_limit = False # Toggles whether login attempt rate is limited (ena
 @app.route('/', methods=['GET', 'POST'])
 # @limiter.limit("5 per minute")
 def login():
-    
-   
     session.clear()
-    # if 'email' in session:
-    #     return redirect(url_for('home'))
-    # # Track login attempts using sessions
-    # if 'login_attempts' not in session:
-    #     session['login_attempts'] = []
+    if 'email' in session:
+        return redirect(url_for('home'))
+     # Track login attempts using sessions
+    if 'login_attempts' not in session:
+        session['login_attempts'] = []
     #ALL THIS^^^^^^^
         
     # Record the current timestamp for each attempt
     current_time = time.time()
     
-    # session['login_attempts'] = [t for t in session['login_attempts'] if current_time - t < 60]  # Keep only attempts within the last 60 seconds
+    session['login_attempts'] = [t for t in session['login_attempts'] if current_time - t < 60]  # Keep only attempts within the last 60 seconds
     #THIS^
     
 
     # # Check if the user has exceeded the limit
-    # if len(session['login_attempts']) >= 5:
-    #     return render_template('login.html', error_message="Too many login attempts. Please try again later")
+    if len(session['login_attempts']) >= 5:
+        return render_template('login.html', error_message="Too many login attempts. Please try again later")
     #THIS^
     #ACTUAL LOGIN LOGIC
     if request.method == 'POST':
@@ -63,7 +61,7 @@ def login():
         if db.verify_login(email, password_hash): 
             # Creates a cookie for user when they login
             session['email'] = email
-            
+            session['account_type'] = db.get_account_type(email)
             return redirect(url_for("home"))
         
             # Add the current attempt timestamp for invalid login
@@ -120,13 +118,17 @@ def submitorder():
 
 @app.route("/reservation", methods=['GET', 'POST'])
 def reservations():
+    
     if 'email' not in session:
         return redirect(url_for('login'))
     if request.method == 'POST': # When modifying a res through /myReservations
         res_id = request.form.get('reservation_id')
         return render_template('reservation.html', res_id = res_id)
     db = Database()
-    return render_template('reservation.html')
+    wait_time = db.calculate_wait_time()
+    print(f"wait time, debugging porpoises: {wait_time}")
+    return render_template('reservation.html', wait_time=wait_time)
+
 
 @app.route('/reserve', methods=['POST'])
 def reserve_table():
@@ -160,7 +162,8 @@ def reserve_table():
 
 @app.route("/checkInReservation", methods=['GET', 'POST'])
 def checkIn():
-    if 'email' not in session or session['account_type'] != 'employee':
+    print(session.get('account_type'))
+    if 'email' not in session or session.get('account_type')!= 'employee':
         flash('Sorry, you do not have permission to view that page.')
         return redirect(url_for('home'))
     if request.method == 'POST':

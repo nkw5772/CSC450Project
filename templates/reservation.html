@@ -184,7 +184,7 @@
     <h1>Restaurant Reservations</h1>
     <nav>
       <a href="#">Home</a>
-      <a href="#">Check-in</a>
+      <a href="/checkInReservation">Check-in</a>
       <a href="#">Contact Us</a>
     </nav>
   </header>
@@ -197,6 +197,7 @@
       <h2>Reserve Your Table Today!</h2>
       <p>Click on a table to start your reservation.</p>
     {% endif %}
+    <p id="wait-time-display">Current Wait Time: <strong>{{ wait_time }}</strong> minutes</p>
   </div>
 
   <div class="restaurant-layout">

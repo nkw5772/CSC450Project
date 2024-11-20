@@ -240,6 +240,21 @@ class Database:
         params = (reservation_id,)
         self.cursor.execute(command, params)
         self.database.commit()
+
+    def calculate_wait_time(self):
+        query = """
+        SELECT 
+            COUNT(*) AS total_rows, 
+            SUM(CASE WHEN CurrentReservation IS NOT NULL THEN CurrentReservation + 60 ELSE 0 END) AS total_sum
+        FROM Seating;
+        """
+        self.cursor.execute(query)
+        total_rows, total_sum = self.cursor.fetchone()
+        
+        # Average calculation, treating NULLs as 0
+        average = total_sum / total_rows if total_rows > 0 else 0
+        return round(average, 0)
+
     ###
     #endregion RESERVATIONS
     ###
@@ -247,6 +262,7 @@ class Database:
     ###
     #region RECURRING
     ###
+
     def remind_reservations(self): # pw: csc team 2
         command = """
         SELECT a.AccountEmail, a.AccountFN, r.ResTime
@@ -277,7 +293,7 @@ class Database:
         OR (r.ResDate = ? AND r.ResTime < ?)
         """
         today = datetime.today().strftime('%Y-%m-%d')
-        noshow_threshold = (datetime.now() - timedelta(minutes=10)).strftime('%H:%M:%S')
+        noshow_threshold = (datetime.now() - timedelta(minutes=30)).strftime('%H:%M:%S')
         params = (today, today, noshow_threshold)
         self.cursor.execute(command, params)
         
