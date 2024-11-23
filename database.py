@@ -32,7 +32,7 @@ class Database:
     #region USER AUTHENTICATION
     ###
 
-    def add_account(self, first_name: str, last_name: str, type: str, email: str, phone: str, created_date: str, password: str):
+    def add_account(self, first_name: str, last_name: str, type: str, email: str, phone: str, created_date: str, password: str) -> None:
         command = """
         INSERT INTO Account (AccountFN, AccountLN, AccountType, AccountEmail, AccountPhoneNo, AccountCreatedDate, PasswordHash) 
         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -66,7 +66,7 @@ class Database:
             return True
         return False
     
-    def verify_login(self, email, password): # Maybe add extra check for phone number to sign in with either?
+    def verify_login(self, email: str, password: str) -> bool: # Maybe add extra check for phone number to sign in with either?
         self.cursor.execute("SELECT PasswordHash FROM Account WHERE AccountEmail = ?", (email,))
         
         result = self.cursor.fetchone()
@@ -113,7 +113,7 @@ class Database:
     ###
     #region  RESERVATIONS
     ###
-    def check_in_search(self, last_name: str):
+    def check_in_search(self, last_name: str) -> list | None:
         command = """
         SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.TableID, r.ResID 
         FROM Account a, Reservation r 
@@ -123,10 +123,10 @@ class Database:
         self.cursor.execute(command, params)
         results = self.cursor.fetchall()
         if len(results) <= 0:
-            return []
+            return None
         return results
     
-    def get_user_reservations(self, email: str):
+    def get_user_reservations(self, email: str) -> list | None:
         command = """
         SELECT r.ResDate, r.ResTime, r.ResNoGuests, r.TableID, r.ResID
         FROM Account a, Reservation r 
@@ -170,12 +170,14 @@ class Database:
             # Query for overlapping reservations (within an hour)
             query = """
             SELECT COUNT(*)
-            FROM Reservation
-            WHERE TableID = ?
-            AND ResDate = ?
+            FROM Reservation r
+            JOIN ReservedSeats rs ON r.ResID = rs.ResID
+            JOIN Seating s ON rs.TableID = s.TableID
+            WHERE s.TableID = ?
+            AND r.ResDate = ?
             AND (
-                (ResTime <= ? AND DATETIME(ResTime, '+60 minutes') > ?)
-                OR (ResTime >= ? AND DATETIME(?, '+60 minutes') > ResTime)
+                (r.ResTime <= ? AND DATETIME(r.ResTime, '+60 minutes') > ?)
+                OR (r.ResTime >= ? AND DATETIME(?, '+60 minutes') > r.ResTime)
             )
             """
             self.cursor.execute(query, (table_id, reservation_date, reservation_time, reservation_time, reservation_time, reservation_time))
@@ -185,16 +187,26 @@ class Database:
             print(f"Error checking reservation conflict: {e}")
             return True
         
-    def make_reservation(self, reservation_date, reservation_time, guests, TimeCreated, TimeUpdated, ResStatus, table_id, ResOwner):
-        command = """
-        INSERT INTO Reservation (ResDate, ResTime, ResNoGuests, TimeCreated, TimeUpdated, ResStatus, TableID, ResOwner)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    def make_reservation(self, reservation_date, reservation_time, guests, TimeCreated, TimeUpdated, ResStatus, table_ids, ResOwner):
+        reserve_command = """
+        INSERT INTO Reservation (ResDate, ResTime, ResNoGuests, TimeCreated, TimeUpdated, ResStatus, ResOwner)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """
-        self.cursor.execute(command, (reservation_date, reservation_time, guests, TimeCreated, TimeUpdated, ResStatus, table_id, ResOwner))
+        add_table_command = """
+        INSERT INTO ReservedSeats (ResID, TableID)
+        Values (?, ?)
+        """
+        params = (reservation_date, reservation_time, guests, TimeCreated, TimeUpdated, ResStatus, ResOwner)
+        self.cursor.execute(reserve_command, params)
+
+        reservation_id = self.cursor.lastrowid
+        for table in table_ids:
+            params = (reservation_id, table)
+            self.cursor.execute(add_table_command, params)
         self.database.commit()
 
-    def modify_reservation(self, reservation_id, reservation_date, reservation_time, guests, time_created, time_updated, res_status, table_id, res_owner):
-        command = """
+    def modify_reservation(self, reservation_id, reservation_date, reservation_time, guests, time_created, time_updated, res_status, table_ids, res_owner):
+        modify_command = """
         UPDATE Reservation SET 
         ResDate = ?,
         ResTime = ?,
@@ -206,8 +218,28 @@ class Database:
         ResOwner = ?
         WHERE ResID = ?
         """
-        params = (reservation_date, reservation_time, guests, time_created, time_updated, res_status, table_id, res_owner, reservation_id)
-        self.cursor.execute(command, params)
+
+        placeholders = ', '.join(['?'] * len(table_ids))
+        remove_tables_command = f"""
+        DELETE FROM ReservedSeats
+        WHERE ResID = ? AND TableID NOT IN ({placeholders})
+        """
+
+        add_table_command = """
+        INSERT INTO ReservedSeats (ResID, TableID)
+        Values (?, ?)
+        """
+        # set new reservation
+        params = (reservation_date, reservation_time, guests, time_created, time_updated, res_status, table, res_owner, reservation_id)
+        self.cursor.execute(modify_command, params)
+        # Remove old reserved tables
+        params = (reservation_id, table_ids)
+        self.cursor.execute(remove_tables_command, params)
+        for table in table_ids:        
+            # Add new tables
+            params = (reservation_id, table)
+            self.cursor.execute(add_table_command, params)
+
         self.database.commit()
 
     def get_res_from_id(self, res_id):
@@ -263,7 +295,7 @@ class Database:
     #region RECURRING
     ###
 
-    def remind_reservations(self): # pw: csc team 2
+    def remind_reservations(self) -> None: # pw: csc team 2
         command = """
         SELECT a.AccountEmail, a.AccountFN, r.ResTime
         FROM Account a, Reservation r
@@ -284,7 +316,7 @@ class Database:
                 """
             self.send_email(row[0], subject, body)
 
-    def handle_no_shows(self):
+    def handle_no_shows(self) -> None:
         command = """
         SELECT a.AccountEmail, r.ResID FROM Account a, Reservation r             
         WHERE a.AccountID = r.ResID
@@ -314,7 +346,7 @@ class Database:
     ###
     # This is kinda a guess until we get a proper ordering page up
     # Still need to figure out how we are gunna do expiration date and stuff, maybe make a file for holding each item data?
-    def order_meat(self, item, size, quantity, expiration_date):
+    def order_meat(self, item, size, quantity: str, expiration_date: str) -> None:
         query = """
         INSERT INTO Inventory (Item, Size, Quantity, Expiration_Date)
         VALUES (?, ?, ?, ?)
@@ -330,12 +362,11 @@ class Database:
             """
             quantity += self.getQuantity(item, size, expiration_date)
             self.cursor.execute(query, (quantity, item, size, expiration_date))
-
         else:
             self.cursor.execute(query, (item, size, quantity, expiration_date))
         self.database.commit()
     
-    def checkInventory(self, item, size, expiration_date):
+    def checkInventory(self, item, size, expiration_date) -> bool:
         query = """
         SELECT *
         FROM INVENTORY
@@ -349,9 +380,9 @@ class Database:
             return True
         return False
 
-    def getQuantity(self, item, size, expiration_date):
+    def getQuantity(self, item, size, expiration_date) -> int:
         query = """
-        SELECT QUANTITY
+        SELECT Quantity
         FROM Inventory
         WHERE
         ITEM = ?

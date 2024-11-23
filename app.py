@@ -9,28 +9,33 @@ import time
 import threading
 import os
 
-
-
+###
+#region GLOBAL
+###
 app = Flask(__name__)
 app.secret_key = "supersecretkey"  # Secret key for session management
 app.config['SESSION_COOKIE_SAMESITE'] = 'Strict' # Blocks cross-site cookies
 
-
 limiter = Limiter(
     get_remote_address,  # This will use the user's IP to track rate limits
     app=app,
-    default_limits=["5 per minute", ]  # Default limits for all routes
+    default_limits=["15 per second", ]  # Default limits for all routes
 )
 
 disable_login_limit = False # Toggles whether login attempt rate is limited (enable if needed for testing)
+###
+#endregion GLOBAL
+###
 
+###
+#region USER AUTHENTICATION
+###
 # Define the route for the login page
 # This page is the root page of the application
 # This will eventually query the database and check the credentials.
 @app.route('/', methods=['GET', 'POST'])
 # @limiter.limit("5 per minute")
 def login():
-    session.clear()
     if 'email' in session:
         return redirect(url_for('home'))
      # Track login attempts using sessions
@@ -52,9 +57,8 @@ def login():
     #ACTUAL LOGIN LOGIC
     if request.method == 'POST':
         db = Database()
-        # Get the form data
+
         email = request.form.get('email')
-        # password = request.form.get('password')
         password_hash = sha256(request.form.get('password').encode('utf-8')).hexdigest()
         
         # Check if the credentials are correct
@@ -86,136 +90,6 @@ def logout():
     # Deletes user's cookies and returns them to login page
     session.clear()
     return redirect(url_for('login'))
-
-@app.route("/home")
-def home():
-    # Loads home if user is logged in, otherwise sends them back to login page
-    if 'email' not in session:
-        return redirect(url_for('login'))
-    return render_template('home.html')
-
-@app.route("/ordering", methods=['GET', 'POST'])
-def ordering():
-    # Need to make it so only employees can get here
-    return render_template('ordering.html')
-
-@app.route('/submitorder', methods=['POST'])
-def submitorder():
-    try:
-    # Gets data from ordering form
-        item = request.form.get('item')
-        size = request.form.get('size')
-        quantity = request.form.get('quantity')
-        expiration_date = (datetime.now() + timedelta(weeks=2)).date()
-
-        db = Database()
-
-
-        return jsonify({'message': 'Reservation successful!'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route("/reservation", methods=['GET', 'POST'])
-def reservations():
-    
-    if 'email' not in session:
-        return redirect(url_for('login'))
-    if request.method == 'POST': # When modifying a res through /myReservations
-        res_id = request.form.get('reservation_id')
-        return render_template('reservation.html', res_id = res_id)
-    db = Database()
-    wait_time = db.calculate_wait_time()
-    print(f"wait time, debugging porpoises: {wait_time}")
-    return render_template('reservation.html', wait_time=wait_time)
-
-
-@app.route('/reserve', methods=['POST'])
-def reserve_table():
-    try:
-    # Extract form data from the request
-        guests = request.form.get('guests')
-        res_date = request.form.get('reservation_date')
-        res_time = request.form.get('reservation_time')
-        table_id = request.form.get('table_id')
-        res_id = request.form.get('reservation_id', default = None)
-
-        # Establish connection to the SQL Server
-        db = Database()
-
-        if db.check_reservation_conflict(table_id, res_date, res_time):
-            return jsonify({'error': 'This table is already reserved at the selected time. Please choose another time or table.'}), 409
-
-        print(f"Guests: {guests}, Date: {res_date}, Time: {res_time}, Table ID: {table_id}")
-        now = datetime.now().strftime('%H:%M:%S')
-        if res_id:
-            current_res = db.get_res_from_id(res_id)
-            time_created = current_res[4]
-            res_owner = current_res[8]
-            db.modify_reservation(res_id, res_date, res_time, guests, time_created, now, 'scheduled', table_id, res_owner)
-        else:
-            db.make_reservation(res_date, res_time, guests, now, now, "scheduled", table_id, db.get_id_from_email(session['email']))
-
-        return jsonify({'message': 'Reservation successful!'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route("/checkInReservation", methods=['GET', 'POST'])
-def checkIn():
-    print(session.get('account_type'))
-    if 'email' not in session or session.get('account_type')!= 'employee':
-        flash('Sorry, you do not have permission to view that page.')
-        return redirect(url_for('home'))
-    if request.method == 'POST':
-        db = Database()
-        last_name = request.form.get('last_name')
-        resSearch = db.check_in_search(last_name)
-        
-        # Check if no results were found
-        if not resSearch:
-            error = "No reservation with the provided name."
-            return render_template('checkInReservation.html', resSearch=None, error=error)
-        
-        return render_template('checkInReservation.html', resSearch=resSearch)
-
-    return render_template('checkInReservation.html')
-
-# Route to perform the actual check-in action by updating reservation status
-@app.route("/confirmCheckIn", methods=['POST'])
-def confirmCheckIn():
-    db = Database()
-    reservation_id = request.form.get('reservation_id')
-    print("Attempting to check in reservation with ResID:", reservation_id)
-    # Attempt to check in the reservation
-    check_in_success = db.check_in_reservation(reservation_id)
-    
-    last_name = request.form.get('last_name')
-    resSearch = db.check_in_search(last_name) if last_name else None
-
-    if check_in_success:
-        message = "Successfully checked in reservation."
-        return render_template('checkInReservation.html', resSearch=resSearch, message=message)
-    else:
-        error = "Failed to check in reservation."
-        return render_template('checkInReservation.html', resSearch=resSearch, error=error)
-
-@app.route('/myReservations', methods=['GET', 'POST'])
-def my_reservations():
-    db = Database()
-    
-    name = db.get_name_from_email(session['email'])[0]
-    reservations = db.get_user_reservations(session['email'])
-
-    if request.method == 'POST': # If cancelling a res 
-        try:
-            res_id = request.form.get('reservation_id')
-            db.update_res_status(res_id, 'cancelled')
-            db.unreserve_table(res_id)
-            return render_template('myReservations.html', name = name, reservations = reservations, message = "Reservation cancelled successfully!")
-        except:
-            return render_template('myReservations.html', name = name, reservations = reservations, error = 'Unable to cancel reservation. Oops lmao')
-
-    return render_template('myReservations.html', name = name, reservations = reservations)
 
 @app.route("/createAccount", methods=['GET', 'POST'])
 @app.route("/createAccount.html", methods=['GET', 'POST']) # Not sure about this
@@ -250,9 +124,161 @@ def createAccount():
             return redirect(url_for('home', login_sucess=True))
 
     # If it's a GET request, render the login page
-   # db = Database()
-    # db.send_email('judevargas222@gmail.com')
     return render_template('createAccount.html')
+###
+#endregion USER AUTHENTICATION
+###
+
+
+@app.route("/home")
+def home():
+    # Loads home if user is logged in, otherwise sends them back to login page
+    if 'email' not in session:
+        return redirect(url_for('login'))
+    return render_template('home.html')
+
+###
+#region INVENTORY
+###
+@app.route("/ordering", methods=['GET', 'POST'])
+def ordering():
+    # Need to make it so only employees can get here
+    return render_template('ordering.html')
+
+@app.route('/submitorder', methods=['POST'])
+def submitorder():
+    try:
+    # Gets data from ordering form
+        item = request.form.get('item')
+        size = request.form.get('size')
+        quantity = request.form.get('quantity')
+        expiration_date = (datetime.now() + timedelta(weeks=2)).date()
+
+        db = Database()
+
+
+        return jsonify({'message': 'Reservation successful!'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+###
+#endregion INVENTORY
+###
+
+###
+#region RESERVATIONS
+###
+@app.route("/reservation", methods=['GET', 'POST'])
+def reservations():
+    if 'email' not in session:
+        return redirect(url_for('login'))
+    if request.method == 'POST': # When modifying a res through /myReservations
+        res_id = request.form.get('reservation_id')
+        return render_template('reservation.html', res_id = res_id)
+    db = Database()
+    wait_time = db.calculate_wait_time()
+    print(f"wait time, debugging porpoises: {wait_time}")
+    return render_template('reservation.html', wait_time=wait_time)
+
+@app.route('/reserve', methods=['POST'])
+def reserve_table():
+    try:
+        data = request.get_json(silent=True, cache=True)
+        if not data:
+            return redirect(url_for('/reservation'))
+        
+        # Extract form data from the request
+        guests = data.get('guests')
+        res_date = data.get('reservation_date')
+        res_time = data.get('reservation_time')
+        table_ids = data.get('table_ids')
+        res_id = data.get('reservation_id', None)
+    
+        # guests = request.form.get('guests')
+        # res_date = request.form.get('reservation_date')
+        # res_time = request.form.get('reservation_time')
+        # table_id = request.form.get('table_id')
+        # res_id = request.form.get('reservation_id', default = None)
+
+        # Establish connection to the SQL Server
+        db = Database()
+        for table in table_ids:
+            if db.check_reservation_conflict(table, res_date, res_time):
+                return jsonify({'error': 'This table is already reserved at the selected time. Please choose another time or table.'}), 409
+
+
+        print(f"Guests: {guests}, Date: {res_date}, Time: {res_time}, Table IDs: {table_ids}")
+        now = datetime.now().strftime('%H:%M:%S')
+        if res_id:
+            current_res = db.get_res_from_id(res_id)
+            time_created = current_res[4]
+            res_owner = current_res[8]
+            db.modify_reservation(res_id, res_date, res_time, guests, time_created, now, 'scheduled', table_ids, res_owner)
+        else:
+            db.make_reservation(res_date, res_time, guests, now, now, "scheduled", table_ids, db.get_id_from_email(session['email']))                
+
+        return jsonify({'message': 'Reservation successful!'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route("/checkInReservation", methods=['GET', 'POST'])
+def checkIn():
+    print(session.get('account_type'))
+    if 'email' not in session or session.get('account_type')!= 'employee':
+        flash('Sorry, you do not have permission to view that page.')
+        return redirect(url_for('home'))
+    if request.method == 'POST':
+        db = Database()
+        last_name = request.form.get('last_name')
+        resSearch = db.check_in_search(last_name)
+        
+        # Check if no results were found
+        if not resSearch:
+            error = 'No reservation with the provided name.'
+            return render_template('checkInReservation.html', resSearch=None, error=error)
+        
+        return render_template('checkInReservation.html', resSearch=resSearch)
+
+    return render_template('checkInReservation.html')
+
+# Route to perform the actual check-in action by updating reservation status
+@app.route("/confirmCheckIn", methods=['POST'])
+def confirmCheckIn():
+    db = Database()
+    reservation_id = request.form.get('reservation_id')
+    print('Attempting to check in reservation with ResID:', reservation_id)
+    # Attempt to check in the reservation
+    check_in_success = db.check_in_reservation(reservation_id)
+    
+    last_name = request.form.get('last_name')
+    resSearch = db.check_in_search(last_name) if last_name else None
+
+    if check_in_success:
+        message = 'Successfully checked in reservation.'
+        return render_template('checkInReservation.html', resSearch=resSearch, message=message)
+    else:
+        error = 'Failed to check in reservation.'
+        return render_template('checkInReservation.html', resSearch=resSearch, error=error)
+
+@app.route('/myReservations', methods=['GET', 'POST'])
+def my_reservations():
+    db = Database()
+    
+    name = db.get_name_from_email(session['email'])[0]
+    reservations = db.get_user_reservations(session['email'])
+
+    if request.method == 'POST': # If cancelling a res 
+        try:
+            res_id = request.form.get('reservation_id')
+            db.update_res_status(res_id, 'cancelled')
+            db.unreserve_table(res_id)
+            return render_template('myReservations.html', name = name, reservations = reservations, message = 'Reservation cancelled successfully!')
+        except:
+            return render_template('myReservations.html', name = name, reservations = reservations, error = 'Unable to cancel reservation. Oops lmao')
+
+    return render_template('myReservations.html', name = name, reservations = reservations)
+###
+#endregion RESERVATIONS
+###
 
 """
 # Triggered before every request (GET/POST) and checks if session account type matches database and flags if not
@@ -292,7 +318,7 @@ def check_stuff():
 
 @app.errorhandler(429)
 def ratelimit_error(e):
-    return render_template('login.html', error_message="Too many login attempts. Please try again later."), 429
+    return render_template('login.html', error_message='Too many login attempts. Please try again later.'), 429
 
 if __name__ == '__main__':
     check_stuff()
