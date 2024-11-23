@@ -8,16 +8,53 @@
     <title>Create Account</title>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+    
         body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             margin: 0;
             font-family: Arial, sans-serif;
             background-color: #f2f2f2;
+            display: flex;
+            flex-direction: column; /* Stack the navbar and content vertically */
+            align-items: center; /* Center content horizontally */
+            min-height: 100vh; /* Ensure body takes full height */
         }
-
+    
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1181f5;
+            color: #ffffff;
+            padding: 10px 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+    
+        .navbar a {
+            color: #ffffff;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+    
+        .navbar a:hover {
+            color: #ff6600;
+        }
+    
+        .brand {
+            font-size: 20px;
+            font-weight: bold;
+        }
+    
         .form-container {
             background-color: #ffffff;
             padding: 40px;
@@ -25,44 +62,46 @@
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
             width: 500px;
             max-width: 90%;
+            margin-top: 80px; /* Added margin to push content below navbar */
         }
-
+    
         h2 {
-            color:  #1181f5 ; 
+            color: #1181f5;
             text-align: center;
             margin-bottom: 20px;
             font-size: 27px;
         }
-
+    
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
-
+    
         .full-width {
             grid-column: 1 / -1;
         }
-
+    
         label {
             color: #333333;
             font-weight: bold;
             margin-bottom: 5px;
             display: block;
         }
-
+    
         input[type="text"], input[type="email"], input[type="tel"], input[type="password"] {
             width: 100%;
             padding: 10px;
+            margin: 8px 0;
             border: 1px solid #cccccc;
             border-radius: 6px;
             box-sizing: border-box;
         }
-
+    
         button {
             width: 100%;
             padding: 12px;
-            background-color: #ff6600; 
+            background-color: #ff6600;
             color: #ffffff;
             border: none;
             border-radius: 6px;
@@ -72,11 +111,11 @@
             transition: background-color 0.3s;
             margin-top: 10px;
         }
-
+    
         button:hover {
-            background-color: #e65c00; 
+            background-color: #e65c00;
         }
-
+    
         small {
             display: block;
             color: #666666;
@@ -84,19 +123,37 @@
             margin-top: -10px;
             margin-bottom: 15px;
         }
+    
         a {
-                color:  #1181f5; 
-                text-decoration: none;
+            color: #1181f5;
+            text-decoration: none;
         }
+    
         a:hover {
-                text-decoration: underline;
+            text-decoration: underline;
         }
+    
         .error_message {
-                color: red;
+            color: red;
         }
     </style>
+    
+    
 </head>
 <body>
+    <div class="navbar">
+        <h1>Create Account</h1>
+        <div class="brand">CSC450Project</div>
+        <div>
+            <a href="/home">Home</a>                
+            {% if session.get('email') %}
+                <a href="/myReservations">My Reservations</a>
+                <a href="/logout">Logout</a>
+            {% else %}
+                <a href="/login">Login</a>
+            {% endif %}                
+        </div>
+    </div>
     <div class="form-container">
         <h2>Create Account</h2>
         

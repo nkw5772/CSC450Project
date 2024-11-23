@@ -6,52 +6,49 @@
     <title>My Reservations</title>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <style>
-        .alert {
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 5px;
-            font-weight: bold;
-            position: fixed;
-            width: 100%;
-            bottom: 0;
-            left: 0;
-        }
-        .alert-success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .alert-danger {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .closebtn {
-            margin-left: 15px;
-            color: white;
-            font-weight: bold;
-            float: right;
-            font-size: 22px;
-            line-height: 20px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .closebtn:hover {
-            color: black;
-        }
-
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        * {
+            box-sizing: border-box;
             margin: 0;
+            padding: 0;
+        }
+    
+        body {
             font-family: Arial, sans-serif;
             background-color: #f2f2f2;
+            display: flex;
+            flex-direction: column; /* Stack the navbar and content vertically */
+            justify-content: flex-start; /* Content should start from the top, under the navbar */
+            align-items: center; /* Center content horizontally */
+            min-height: 100vh;
+            padding-top: 0; /* Ensure no extra space above the navbar */
         }
-
+    
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1181f5;
+            color: #ffffff;
+            padding: 10px 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 1000; /* Ensure it stays on top of other content */
+        }
+    
+        .navbar a {
+            color: #ffffff;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+    
+        .navbar a:hover {
+            color: #ff6600;
+        }
+    
         .form-container, .table-container {
             background-color: #ffffff;
             padding: 40px;
@@ -60,34 +57,31 @@
             width: 500px;
             max-width: 90%;
             margin-bottom: 30px;
+            margin-top: 20px;
         }
-
+    
+        h1 {
+            color: #ffffff;
+            text-align: left;
+            margin-bottom: 20px;
+            margin-left: 5px;
+            font-size: 27px;
+        }
+    
         h2 {
-            color:  #1181f5; 
+            color: #1181f5;
             text-align: center;
             margin-bottom: 20px;
             font-size: 27px;
         }
-
-        h4 {
-            text-align: center
-        }
-
+    
         label {
             color: #333333;
             font-weight: bold;
             margin-bottom: 5px;
             display: block;
         }
-
-        input[type="text"], input[type="email"], input[type="tel"], input[type="password"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #cccccc;
-            border-radius: 6px;
-            box-sizing: border-box;
-        }
-        
+    
         button {
             width: 100%;
             padding: 12px;
@@ -101,39 +95,88 @@
             transition: background-color 0.3s;
             margin-top: 10px;
         }
-
+    
         button:hover {
             background-color: #e65c00; 
         }
-
+    
         .table-container table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
         }
-
+    
         .table-container th, .table-container td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #dddddd;
         }
-
+    
         .table-container th {
             background-color: #f8f8f8;
             color: #1181f5;
         }
-
+    
         .table-container tr:hover {
             background-color: #f1f1f1;
         }
-
-        .error_message {
-            color: red;
+    
+        .alert {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+            left: 0;
         }
-        
+    
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+    
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    
+        .closebtn {
+            margin-left: 15px;
+            color: white;
+            font-weight: bold;
+            float: right;
+            font-size: 22px;
+            line-height: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+    
+        .closebtn:hover {
+            color: black;
+        }
     </style>
+    
+    
+    
 </head>
 <body>
+    <div class="navbar">
+        <h1>My Reservations</h1>
+        <div class="brand">CSC450Project</div>
+        <div>
+            <a href="/home">Home</a>                
+            {% if session.get('email') %}
+                <a href="/myReservations">My Reservations</a>
+                <a href="/logout">Logout</a>
+            {% else %}
+                <a href="/login">Login</a>
+            {% endif %}                
+        </div>
+    </div>
     {% if message %}
         <div class="alert alert-success">
             <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>

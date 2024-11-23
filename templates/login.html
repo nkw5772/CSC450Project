@@ -6,17 +6,48 @@
         <title>Login Page</title>
         <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
         <style>
-            
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+        
             body {
                 display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                margin: 0;
+                flex-direction: column; /* Stack the navbar and content vertically */
+                justify-content: flex-start; /* Content should start from the top */
+                align-items: center; /* Center content horizontally */
+                min-height: 100vh;
                 font-family: Arial, sans-serif;
                 background-color: #f2f2f2;
             }
-
+        
+            .navbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background-color: #1181f5;
+                color: #ffffff;
+                padding: 10px 20px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                position: sticky;
+                top: 0;
+                width: 100%;
+                z-index: 1000;
+            }
+        
+            .navbar a {
+                color: #ffffff;
+                text-decoration: none;
+                margin: 0 15px;
+                font-size: 16px;
+                transition: color 0.3s;
+            }
+        
+            .navbar a:hover {
+                color: #ff6600;
+            }
+        
             .login-container {
                 background-color: #ffffff;
                 padding: 30px;
@@ -24,19 +55,20 @@
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 width: 300px;
                 text-align: center;
+                margin-top: 100px; /* Space from the top due to sticky navbar */
             }
-
+        
             h2 {
-                color:  #1181f5 ; 
+                color: #1181f5;
                 margin-bottom: 20px;
                 font-size: 27px;
             }
-
+        
             label {
                 color: #333333;
                 font-weight: bold;
             }
-
+        
             input[type="text"], input[type="password"] {
                 width: 100%;
                 padding: 10px;
@@ -45,11 +77,11 @@
                 border-radius: 5px;
                 box-sizing: border-box;
             }
-
+        
             button {
                 width: 100%;
                 padding: 10px;
-                background-color: #ff6600; 
+                background-color: #ff6600;
                 color: #ffffff;
                 border: none;
                 border-radius: 5px;
@@ -57,30 +89,36 @@
                 cursor: pointer;
                 transition: background-color 0.3s;
             }
-
+        
             button:hover {
-                background-color: #e65c00; 
+                background-color: #e65c00;
             }
-
+        
             p {
                 margin-top: 15px;
                 color: #333333;
             }
-
+        
             a {
-                color:  #1181f5; 
+                color: #1181f5;
                 text-decoration: none;
             }
-
+        
             a:hover {
                 text-decoration: underline;
             }
-            #error_message{
+        
+            #error_message {
                 color: red;
             }
         </style>
+        
     </head>
     <body>
+        <div class="navbar">
+            <h1>Login</h1>
+            <div class="brand">CSC450Project</div>
+        </div>
         <div class="login-container">
             <h2>Login</h2>
             
