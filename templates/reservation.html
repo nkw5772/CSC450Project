@@ -11,6 +11,30 @@
       margin: 0;
       padding: 0;
     }
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #1181f5;
+      color: #ffffff;
+      padding: 10px 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      position: sticky;
+      top: 0;
+      width: 100%;
+    }
+
+    .navbar a {
+      color: #ffffff;
+      text-decoration: none;
+      margin: 0 15px;
+      font-size: 16px;
+      transition: color 0.3s;
+    }
+
+    .navbar a:hover {
+      color: #ff6600;
+    }
   
     body {
       font-family: Arial, sans-serif;
@@ -186,14 +210,19 @@
   
 </head>
 <body>
-  <header>
-    <h1>Restaurant Reservations</h1>
-    <nav>
-      <a href="#">Home</a>
-      <a href="/checkInReservation">Check-in</a>
-      <a href="#">Contact Us</a>
-    </nav>
-  </header>
+  <div class="navbar">
+    <h1>Reservation</h1>
+    <div class="brand">CSC450Project</div>
+    <div>
+        <a href="/home">Home</a>                
+        {% if session.get('email') %}
+            <a href="/myReservations">My Reservations</a>
+            <a href="/logout">Logout</a>
+        {% else %}
+            <a href="/login">Login</a>
+        {% endif %}                
+    </div>
+</div>
 
   <div class="main-content">
     {% if res_id %}
