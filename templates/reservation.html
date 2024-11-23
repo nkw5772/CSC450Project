@@ -11,14 +11,16 @@
       margin: 0;
       padding: 0;
     }
-
+  
     body {
       font-family: Arial, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       background-color: #f4f4f9;
+      min-height: 100vh; /* Ensures the body takes the full viewport height */
     }
+  
     header {
       width: 100%;
       background-color: #333;
@@ -28,46 +30,48 @@
       justify-content: space-between;
       align-items: center;
     }
-
+  
     header h1 {
       font-size: 24px;
     }
-
+  
     header nav a {
       color: #fff;
       margin: 0 10px;
       text-decoration: none;
     }
-
+  
     .main-content {
       text-align: center;
       margin: 20px 0;
     }
-
+  
     .main-content h2 {
       font-size: 28px;
       color: #333;
     }
-
+  
     .main-content p {
       font-size: 18px;
       color: #555;
     }
-
+  
     .restaurant-layout {
       display: grid;
-      grid-template-columns: repeat(4, 80px);
-      grid-template-rows: repeat(3, 80px);
-      gap: 40px;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 20px; /* Adjust spacing between tables */
+      width: 90%;
+      min-height: 100vh; /* Extends the layout container to full viewport height */
+      margin: auto; /* Center layout */
       padding: 20px;
       background-color: #e8e8e8;
       border-radius: 10px;
-      max-width: 600px;
-      position: relative;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
     }
-
+  
     .table {
-      background-color:  #a05a18;
+      background-color: #a05a18;
       color: white;
       display: flex;
       align-items: center;
@@ -77,28 +81,28 @@
       cursor: pointer;
       transition: background-color 0.3s ease;
     }
-
+  
     .table:hover {
       background-color: #784515;
     }
-
+  
     .table-small {
       width: 60px;
       height: 60px;
     }
-
+  
     .table-regular {
       width: 80px;
       height: 80px;
     }
-
+  
     .table-large {
       width: 130px;
       height: 90px;
       grid-column: span 2;
       grid-row: span 2;
     }
-
+  
     .entrance, .kitchen {
       grid-column: span 4;
       text-align: center;
@@ -107,15 +111,15 @@
       padding: 10px;
       border-radius: 8px;
     }
-
+  
     .entrance {
       background-color: #0073e6;
     }
-
+  
     .kitchen {
       background-color: #ff6600;
     }
-
+  
     .side-panel {
       position: fixed;
       top: 0;
@@ -123,22 +127,22 @@
       width: 400px;
       height: 100%;
       background-color: #fff;
-      box-shadow: -2px 0 5px rgba(0,0,0,0.5);
+      box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);
       transition: right 0.3s ease;
       padding: 20px;
       overflow-y: auto;
     }
-
+  
     .side-panel.open {
       right: 0;
     }
-
+  
     .side-panel h3 {
       font-size: 24px;
       color: #333;
       margin-bottom: 20px;
     }
-
+  
     .close-btn {
       position: absolute;
       top: 20px;
@@ -149,35 +153,37 @@
       border: none;
       cursor: pointer;
     }
+  
     .side-panel .reservation-form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .side-panel .reservation-form label {
-    font-weight: bold;
-  }
-
-  .side-panel .reservation-form input {
-    padding: 8px;
-    margin: 5px 0;
-    font-size: 16px;
-  }
-
-  .side-panel .reserve-btn {
-    padding: 10px;
-    font-size: 16px;
-    background-color: #ff6600;
-    color: white;
-    border: none;
-    cursor: pointer;
-  }
-
-  .side-panel .reserve-btn:hover {
-    background-color: #0073e6;
-  }
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+  
+    .side-panel .reservation-form label {
+      font-weight: bold;
+    }
+  
+    .side-panel .reservation-form input {
+      padding: 8px;
+      margin: 5px 0;
+      font-size: 16px;
+    }
+  
+    .side-panel .reserve-btn {
+      padding: 10px;
+      font-size: 16px;
+      background-color: #ff6600;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+  
+    .side-panel .reserve-btn:hover {
+      background-color: #0073e6;
+    }
   </style>
+  
 </head>
 <body>
   <header>
@@ -218,6 +224,68 @@
     <div class="table table-small" onclick="openPanel(10)" id="10">10</div>
     <div class="table table-regular" onclick="openPanel(11)" id="11">11</div>
     <div class="table table-small" onclick="openPanel(12)" id="12">12</div>
+
+    <div class="table table-extra-large" onclick="openPanel(13)" id="13">13</div>
+    <div class="table table-small" onclick="openPanel(14)" id="14">14</div>
+    <div class="table table-regular" onclick="openPanel(15)" id="15">15</div>
+    <div class="table table-large" onclick="openPanel(16)" id="16">16</div>
+
+    <div class="table table-small" onclick="openPanel(17)" id="17">17</div>
+    <div class="table table-regular" onclick="openPanel(18)" id="18">18</div>
+    <div class="table table-large" onclick="openPanel(19)" id="19">19</div>
+    <div class="table table-small" onclick="openPanel(20)" id="20">20</div>
+
+    <div class="table table-regular" onclick="openPanel(21)" id="21">21</div>
+    <div class="table table-large" onclick="openPanel(22)" id="22">22</div>
+    <div class="table table-small" onclick="openPanel(23)" id="23">23</div>
+    <div class="table table-regular" onclick="openPanel(24)" id="24">24</div>
+
+    <div class="table table-large" onclick="openPanel(25)" id="25">25</div>
+    <div class="table table-small" onclick="openPanel(26)" id="26">26</div>
+    <div class="table table-regular" onclick="openPanel(27)" id="27">27</div>
+    <div class="table table-large" onclick="openPanel(28)" id="28">28</div>
+
+    <div class="table table-small" onclick="openPanel(29)" id="29">29</div>
+    <div class="table table-regular" onclick="openPanel(30)" id="30">30</div>
+    <div class="table table-large" onclick="openPanel(31)" id="31">31</div>
+    <div class="table table-small" onclick="openPanel(32)" id="32">32</div>
+
+    <div class="table table-regular" onclick="openPanel(33)" id="33">33</div>
+    <div class="table table-large" onclick="openPanel(34)" id="34">34</div>
+    <div class="table table-small" onclick="openPanel(35)" id="35">35</div>
+    <div class="table table-regular" onclick="openPanel(36)" id="36">36</div>
+
+    <div class="table table-large" onclick="openPanel(37)" id="37">37</div>
+    <div class="table table-small" onclick="openPanel(38)" id="38">38</div>
+    <div class="table table-regular" onclick="openPanel(39)" id="39">39</div>
+    <div class="table table-large" onclick="openPanel(40)" id="40">40</div>
+
+    <div class="table table-small" onclick="openPanel(41)" id="41">41</div>
+    <div class="table table-regular" onclick="openPanel(42)" id="42">42</div>
+    <div class="table table-large" onclick="openPanel(43)" id="43">43</div>
+    <div class="table table-small" onclick="openPanel(44)" id="44">44</div>
+
+    <div class="table table-regular" onclick="openPanel(45)" id="45">45</div>
+    <div class="table table-large" onclick="openPanel(46)" id="46">46</div>
+    <div class="table table-small" onclick="openPanel(47)" id="47">47</div>
+    <div class="table table-regular" onclick="openPanel(48)" id="48">48</div>
+
+    <div class="table table-large" onclick="openPanel(49)" id="49">49</div>
+    <div class="table table-small" onclick="openPanel(50)" id="50">50</div>
+    <div class="table table-regular" onclick="openPanel(51)" id="51">51</div>
+    <div class="table table-large" onclick="openPanel(52)" id="52">52</div>
+
+    <div class="table table-small" onclick="openPanel(53)" id="53">53</div>
+    <div class="table table-regular" onclick="openPanel(54)" id="54">54</div>
+    <div class="table table-large" onclick="openPanel(55)" id="55">55</div>
+    <div class="table table-small" onclick="openPanel(56)" id="56">56</div>
+
+    <div class="table table-regular" onclick="openPanel(57)" id="57">57</div>
+    <div class="table table-large" onclick="openPanel(58)" id="58">58</div>
+    <div class="table table-small" onclick="openPanel(59)" id="59">59</div>
+    <div class="table table-regular" onclick="openPanel(60)" id="60">60</div>
+    <div class="table table-small" onclick="openPanel(61)" id="61">61</div>
+
 
     <div class="kitchen">Kitchen</div>
   </div>
