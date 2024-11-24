@@ -324,7 +324,7 @@
   </div>
 
   <div>
-    <button class="reserve-btn" onclick="openPanel(selectedTables)" id="finish-button">Select Date & Time</button>
+    <button class="reserve-btn" onclick="openPanel()" id="finish-button">Select Date & Time</button>
     <p class="error-message" style="display: none;" id="table-count-error">You must select at least one table to reseve.</p>
   </div>
 
@@ -372,7 +372,7 @@
         }
     }
 
-    function openPanel(tableNumbers) {
+    function openPanel() {
         const errorMessage = document.getElementById("table-count-error");
         if (selectedTables.length <= 0) {
             errorMessage.style.display = "block"; // Display error if no table(s) selected

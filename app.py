@@ -135,6 +135,11 @@ def home():
     # Loads home if user is logged in, otherwise sends them back to login page
     if 'email' not in session:
         return redirect(url_for('login'))
+    
+    db = Database()
+    user_notifs = db.get_account_notifications(session.get('email'))
+    if user_notifs:
+        return render_template('home.html', user_notifs=user_notifs, remove_notification=db.remove_notification)
     return render_template('home.html')
 
 ###
@@ -321,6 +326,6 @@ def ratelimit_error(e):
     return render_template('login.html', error_message='Too many login attempts. Please try again later.'), 429
 
 if __name__ == '__main__':
-    check_stuff()
+    # check_stuff()
     # threading.Thread(target=refresh_app, daemon=True).start()
     app.run(debug=True) # Ok so setting debug=True gives a random Windows error that idk how to suppress, BUT it doesn't make the error when debug=False

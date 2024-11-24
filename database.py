@@ -335,7 +335,6 @@ class Database:
             self.unreserve_table(id)
             print(f'Table with ID #{id} has been un-reserved.')
 
-        # Keep this at the very end of this function
         self.database.commit()
     ###
     #endregion RECURRING
@@ -355,8 +354,7 @@ class Database:
             query = """
             UPDATE INVENTORY SET
             QUANTITY = ?
-            WHERE
-            ITEM = ?
+            WHERE ITEM = ?
             AND SIZE = ?
             AND EXPIRATION_DATE = ?
             """
@@ -370,8 +368,7 @@ class Database:
         query = """
         SELECT *
         FROM INVENTORY
-        WHERE
-        ITEM = ?
+        WHERE ITEM = ?
         AND SIZE = ?
         AND EXPIRATION_DATE = ?
         """
@@ -384,8 +381,7 @@ class Database:
         query = """
         SELECT Quantity
         FROM Inventory
-        WHERE
-        ITEM = ?
+        WHERE ITEM = ?
         AND SIZE = ?
         AND EXPIRATION_DATE = ?
         """
@@ -425,6 +421,38 @@ class Database:
             print(f"An error occurred: {e}")
         finally:
             server.quit()
+
+    def add_notification(self, account_id, message) -> None:
+        command = """
+        INSERT INTO Notification (AccountID, Message)
+        VALUES (?, ?)
+        """
+        params = (account_id, message)
+        self.cursor.execute(command, params)
+        self.database.commit()
+
+    def remove_notification(self, notification_id) -> None:
+        command = """
+        DELETE FROM Notification
+        WHERE NotificationID = ?
+        """
+        params = (notification_id,)
+        self.cursor.execute(command, params)
+        self.database.commit()
+
+    def get_account_notifications(self, email) -> list | None:
+        command = """
+        SELECT NotificationID, Message
+        FROM Notification
+        WHERE AccountID = ?
+        """
+        params = (self.get_id_from_email(email),)
+        self.cursor.execute(command, params)
+
+        results = self.cursor.fetchall()
+        if len(results) <= 0:
+            return None
+        return results
     ###
     #endregion MISC
     ###

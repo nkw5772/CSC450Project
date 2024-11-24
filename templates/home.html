@@ -99,6 +99,13 @@
             <p>Explore our features.</p>
             <a href="/">Login</a>
             <a href="/reservation">Reserve</a>
+            {% if user_notifs %}
+                <ul>
+                {% for id, message in user_notifs %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
         </div>
     </body>
 </html>
