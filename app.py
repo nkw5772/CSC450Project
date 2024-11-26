@@ -323,6 +323,7 @@ def inventory():
     if request.method == 'POST': # If removing an item
         inventoryID = request.form.get('inventory_id')
         db.removeItem(inventoryID)
+        inventory = db.getInventory()
 
     return render_template('inventory.html', inventory = inventory)
 ###
