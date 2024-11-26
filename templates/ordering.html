@@ -146,8 +146,8 @@
         <form action="/submitorder" method="POST" class="form-grid">
 
             <div>
-                <label for="item">Item:</label>
-                <select id="item" name="item" required>
+                <label for="food_type">Item:</label>
+                <select id="food_type" name="item" required>
                     <option value="">Select item</option>
                     <option value="steak">Steak</option>
                     <option value="chicken">Chicken</option>
@@ -169,6 +169,7 @@
                 <label for="quantity">Quantity:</label>
                 <input type="number" id="quantity" name="quantity" min="1" max="100" required>
             </div>
+            
 
             <div class="full-width">
                 <button type="submit">Submit</button>

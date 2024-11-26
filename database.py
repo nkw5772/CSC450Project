@@ -403,49 +403,54 @@ class Database:
     ###
     # This is kinda a guess until we get a proper ordering page up
     # Still need to figure out how we are gunna do expiration date and stuff, maybe make a file for holding each item data?
-    def order_meat(self, item, size, quantity: str, expiration_date: str) -> None:
-        query = """
-        INSERT INTO Inventory (Item, Size, Quantity, Expiration_Date)
-        VALUES (?, ?, ?, ?)
-        """
-        if self.checkInventory(item, size, expiration_date):
+    def order_meat(self, food_type, size, amount: str, expiration_date: str) -> None:
+        purchase_date = datetime.now().strftime('%Y-%m-%d')  # Current date
+        purchase_time = datetime.now().strftime('%H:%M:%S')  # Current time
+
+        if self.checkInventory(food_type, expiration_date):
+            # Update existing inventory entry
             query = """
-            UPDATE INVENTORY SET
-            QUANTITY = ?
-            WHERE ITEM = ?
-            AND SIZE = ?
-            AND EXPIRATION_DATE = ?
+            UPDATE Inventory
+            SET Amount = ?
+            WHERE FoodType = ?
+            AND ExpirationDate = ?
             """
-            quantity += self.getQuantity(item, size, expiration_date)
-            self.cursor.execute(query, (quantity, item, size, expiration_date))
+            amount += self.getQuantity(food_type, expiration_date)
+            self.cursor.execute(query, (amount, food_type, expiration_date))
         else:
-            self.cursor.execute(query, (item, size, quantity, expiration_date))
+            # Insert new inventory entry
+            query = """
+            INSERT INTO Inventory (FoodType, Amount, PurchaseDate, PurchaseTime, ExpirationDate, InventoryStatus)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """
+            inventory_status = "available"  # Default status
+            self.cursor.execute(query, (food_type, amount, purchase_date, purchase_time, expiration_date, inventory_status))
+
         self.database.commit()
-    
-    def checkInventory(self, item, size, expiration_date) -> bool:
+
+
+    def checkInventory(self, food_type, expiration_date) -> bool:
         query = """
         SELECT *
-        FROM INVENTORY
-        WHERE ITEM = ?
-        AND SIZE = ?
-        AND EXPIRATION_DATE = ?
-        """
-        self.cursor.execute(query, (item, size, expiration_date))
-        if self.cursor.fetchall():
-            return True
-        return False
-
-    def getQuantity(self, item, size, expiration_date) -> int:
-        query = """
-        SELECT Quantity
         FROM Inventory
-        WHERE ITEM = ?
-        AND SIZE = ?
-        AND EXPIRATION_DATE = ?
+        WHERE FoodType = ?
+        AND ExpirationDate = ?
         """
-        self.cursor.execute(query, (item, size, expiration_date))
-        quantity = self.cursor.fetchall()[0][0]
-        return quantity
+        self.cursor.execute(query, (food_type, expiration_date))
+        return bool(self.cursor.fetchall())
+
+    def getQuantity(self, food_type, expiration_date) -> int:
+        query = """
+        SELECT Amount
+        FROM Inventory
+        WHERE FoodType = ?
+        AND ExpirationDate = ?
+        """
+        self.cursor.execute(query, (food_type, expiration_date))
+        result = self.cursor.fetchone()
+        return int(result[0]) if result else 0
+
+
     ###
     #endregion INVENTORY
     ###
