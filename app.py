@@ -133,6 +133,20 @@ def createAccount():
 @app.route("/home")
 def home():
     # Loads home if user is logged in, otherwise sends them back to login page
+    if "email" in session:
+        disable_script = """
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const loginButton = document.getElementById('login-btn');
+                if (loginButton) {
+                    loginButton.style.backgroundColor = '#808080';
+                    loginButton.style.pointerEvents = 'none';
+                }
+            });
+        </script>
+        """
+
+        return render_template('home.html', disable_script=disable_script)
     if 'email' not in session:
         return redirect(url_for('login'))
     
@@ -263,6 +277,11 @@ def confirmCheckIn():
     else:
         error = 'Failed to check in reservation.'
         return render_template('checkInReservation.html', resSearch=resSearch, error=error)
+
+@app.route('/reservationInfo', methods=['GET', 'POST'])
+def reservationInfo():
+    return render_template('reservationInfo.html')
+
 
 @app.route('/myReservations', methods=['GET', 'POST'])
 def my_reservations():

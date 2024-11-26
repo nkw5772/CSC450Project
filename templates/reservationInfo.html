@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restaurant Reservation System</title>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #1181f5;
+      color: #ffffff;
+      padding: 10px 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      position: sticky;
+      top: 0;
+      width: 100%;
+    }
+
+    .navbar a {
+      color: #ffffff;
+      text-decoration: none;
+      margin: 0 15px;
+      font-size: 16px;
+      transition: color 0.3s;
+    }
+
+    .navbar a:hover {
+      color: #ff6600;
+    }
+  
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f4f4f9;
+      min-height: 100vh; /* Ensures the body takes the full viewport height */
+    }
+  
+    header {
+      width: 100%;
+      background-color: #333;
+      color: #fff;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  
+    header h1 {
+      font-size: 24px;
+    }
+  
+    header nav a {
+      color: #fff;
+      margin: 0 10px;
+      text-decoration: none;
+    }
+
+    
+
+    .form-container {
+      background-color: #ffffff;
+      padding: 20px 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      max-width: 400px;
+      width: 100%;
+    }
+
+    .form-container h2 {
+      color: #1181f5;
+      font-size: 24px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #333333;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #1181f5;
+    }
+
+    .form-group input[type="number"]::-webkit-inner-spin-button,
+    .form-group input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .submit-button {
+      display: block;
+      width: 100%;
+      background-color: #1181f5;
+      color: #ffffff;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+      transition: background-color 0.3s;
+    }
+
+    .submit-button:hover {
+      background-color: #0e6cc4;
+    }
+  
+    
+  </style>
+  
+</head>
+<body>
+  <div class="navbar">
+    <h1>Reservation</h1>
+    <div class="brand">CSC450Project</div>
+    <div>
+        <a href="/home">Home</a>                
+        {% if session.get('email') %}
+            <a href="/myReservations">My Reservations</a>
+            <a href="/logout">Logout</a>
+        {% else %}
+            <a href="/login">Login</a>
+        {% endif %}                
+    </div>
+</div>
+
+<div class="form-container">
+    <h2>Make a Reservation</h2>
+    <form action="/submitReservation" method="POST">
+      <div class="form-group">
+        <label for="table-size">Table Size</label>
+        <input type="number" id="table-size" name="table_size" min="1" max="20" required>
+      </div>
+      <p id="error_message" class="error_message">{{error_message}}</p>
+      <div class="form-group">
+        <label for="reservation-date">Reservation Date</label>
+        <input type="date" id="reservation-date" name="reservation_date" required>
+      </div>
+      <p id="error_message" class="error_message">{{error_message}}</p>
+      <div class="form-group">
+        <label for="reservation-time">Reservation Time</label>
+        <input type="time" id="reservation-time" name="reservation_time" required>
+      </div>
+      <p id="error_message" class="error_message">{{error_message}}</p>
+      <button type="submit" class="submit-button">Reserve</button>
+      <p id="error_message" class="error_message">{{error_message}}</p>
+    </form>
+  </div>
+</body>
+</html>

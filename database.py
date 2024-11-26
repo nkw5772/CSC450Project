@@ -315,7 +315,65 @@ class Database:
                        Don't miss your reservation!!!
                 """
             self.send_email(row[0], subject, body)
+    
+    def get_table_ids(self, resID):
+        query = """
+        SELECT TableID FROM ReservedSeats WHERE ResID = ?
+        """
+        try:
+            connection = sqlite3.connect('restaurant.db')
+            cursor = connection.cursor()
 
+            # Execute the query with the provided parameters
+            cursor.execute(query, (resID))
+
+            # Fetch all matching rows as a list of tuples
+            tableID = cursor.fetchone()
+
+            # Close the connection
+            connection.close()
+            return tableID
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+            return []
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return []
+    def filter_reservations(self, no_seats, res_time, res_date):
+        # query = """
+        # SELECT * FROM Reservation
+        # WHERE ResNoGuests = ? AND ResTime = ? AND ResDate = ?
+        # """
+        query = """SELECT ReservedSeats.TableID
+        FROM Reservation
+        JOIN ReservedSeats ON Reservation.ResID = ReservedSeats.ResID
+        WHERE Reservation.ResNoGuests = ? 
+        AND Reservation.ResTime = ? 
+        AND Reservation.ResDate = ?
+        """
+        try:
+            connection = sqlite3.connect('restaurant.db')
+            cursor = connection.cursor()
+
+            # Execute the query with the provided parameters
+            cursor.execute(query, (no_seats, res_time, res_date))
+
+            # Fetch all matching rows as a list of tuples
+            reservations = cursor.fetchall()
+
+            # Close the connection
+            connection.close()
+
+            
+            
+            return reservations
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+            return []
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return []
+        
     def handle_no_shows(self) -> None:
         command = """
         SELECT a.AccountEmail, r.ResID FROM Account a, Reservation r             
@@ -487,3 +545,5 @@ class Database:
     ###
     #endregion OLD CODE
     ###
+    
+        
