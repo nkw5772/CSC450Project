@@ -280,6 +280,20 @@ def confirmCheckIn():
 
 @app.route('/reservationInfo', methods=['GET', 'POST'])
 def reservationInfo():
+    if request.method == 'POST':
+        
+        table_size = request.form.get('table_size')
+        reservation_date = request.form.get('reservation_date')
+        reservation_time = request.form.get('reservation_time')
+        # db = Database()
+        # something = db.filter_reservations(reservation_time, reservation_date)
+        # print(something)
+        db = Database()
+        reserved_tables = db.filter_reservations(reservation_time, reservation_date)
+        
+        print(reserved_tables)
+        
+    
     return render_template('reservationInfo.html')
 
 

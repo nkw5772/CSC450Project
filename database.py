@@ -339,7 +339,7 @@ class Database:
         except Exception as e:
             print(f"Unexpected error: {e}")
             return []
-    def filter_reservations(self, no_seats, res_time, res_date):
+    def filter_reservations(self, res_time, res_date):
         # query = """
         # SELECT * FROM Reservation
         # WHERE ResNoGuests = ? AND ResTime = ? AND ResDate = ?
@@ -347,8 +347,7 @@ class Database:
         query = """SELECT ReservedSeats.TableID
         FROM Reservation
         JOIN ReservedSeats ON Reservation.ResID = ReservedSeats.ResID
-        WHERE Reservation.ResNoGuests = ? 
-        AND Reservation.ResTime = ? 
+        WHERE Reservation.ResTime = ? 
         AND Reservation.ResDate = ?
         """
         try:
@@ -356,17 +355,17 @@ class Database:
             cursor = connection.cursor()
 
             # Execute the query with the provided parameters
-            cursor.execute(query, (no_seats, res_time, res_date))
+            cursor.execute(query, (res_time, res_date))
 
             # Fetch all matching rows as a list of tuples
             reservations = cursor.fetchall()
 
             # Close the connection
             connection.close()
-
-            
-            
-            return reservations
+            empty_list = []
+            for i in reservations:
+                empty_list.append(i[0])
+            return empty_list
         except sqlite3.Error as e:
             print(f"Database error: {e}")
             return []
