@@ -77,22 +77,25 @@ def login():
             #THIS^
             
         else:
-                # Show an error message if credentials are incorrect
-            error_message = "Invalid username or password. Please try again."
+            # Show an error message if credentials are incorrect
+            error_message = 'Invalid username or password. Please try again.'
             return render_template('login.html', error_message=error_message)
 
 
     # If it's a GET request, render the login page
-    return render_template('login.html')
+    response = make_response(render_template('login.html'))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private' # Prevent page caching so user can't use browser back button to reach page after logging in
+    response.headers['Pragma'] = 'no-cache' # Same thing but for backwards compatibility with older browsers
+    response.headers['Expires'] = '0' # Ditto
+    return response
 
-@app.route("/logout")
+@app.route('/logout')
 def logout():
     # Deletes user's cookies and returns them to login page
     session.clear()
     return redirect(url_for('login'))
 
 @app.route("/createAccount", methods=['GET', 'POST'])
-@app.route("/createAccount.html", methods=['GET', 'POST']) # Not sure about this
 def createAccount():
     if request.method == 'POST':
         db = Database()
@@ -132,29 +135,24 @@ def createAccount():
 
 @app.route("/home")
 def home():
-    # Loads home if user is logged in, otherwise sends them back to login page
-    if "email" in session:
-        disable_script = """
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const loginButton = document.getElementById('login-btn');
-                if (loginButton) {
-                    loginButton.style.backgroundColor = '#808080';
-                    loginButton.style.pointerEvents = 'none';
-                }
-            });
-        </script>
-        """
-
-        return render_template('home.html', disable_script=disable_script)
     if 'email' not in session:
         return redirect(url_for('login'))
-    
+    disable_script = """
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginButton = document.getElementById('login-btn');
+            if (loginButton) {
+                loginButton.style.backgroundColor = '#808080';
+                loginButton.style.pointerEvents = 'none';
+            }
+        });
+    </script>
+    """
     db = Database()
     user_notifs = db.get_account_notifications(session.get('email'))
     if user_notifs:
-        return render_template('home.html', user_notifs=user_notifs, remove_notification=db.remove_notification)
-    return render_template('home.html')
+        return render_template('home.html', user_notifs=user_notifs, remove_notification=db.remove_notification, disable_script=disable_script)
+    return render_template('home.html', remove_notification=db.remove_notification, disable_script=disable_script)
 
 ###
 #region INVENTORY
@@ -282,6 +280,13 @@ def confirmCheckIn():
 def reservationInfo():
     return render_template('reservationInfo.html')
 
+@app.route('/getSeatCount', methods=['POST'])
+def getSeatCount():
+    data = request.get_json()['tables']
+
+    db = Database()
+
+    db.get_table_seat_count()
 
 @app.route('/myReservations', methods=['GET', 'POST'])
 def my_reservations():
