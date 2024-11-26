@@ -287,6 +287,15 @@ class Database:
         average = total_sum / total_rows if total_rows > 0 else 0
         return round(average, 0)
 
+    def get_table_seat_count(self, tables: list) -> int:
+        command = f"""
+        SELECT SUM(TableNoSeats)
+        FROM Seating
+        WHERE TableID IN ({', '.join(['?'] * len(tables))})
+        """
+        params = tuple(list)
+        self.cursor.execute(command, params)
+        return self.cursor.fetchone()[0] # User should never be able to call this without selecting >= 1 tables
     ###
     #endregion RESERVATIONS
     ###
@@ -321,17 +330,10 @@ class Database:
         SELECT TableID FROM ReservedSeats WHERE ResID = ?
         """
         try:
-            connection = sqlite3.connect('restaurant.db')
-            cursor = connection.cursor()
-
             # Execute the query with the provided parameters
-            cursor.execute(query, (resID))
-
+            self.cursor.execute(query, (resID,))
             # Fetch all matching rows as a list of tuples
-            tableID = cursor.fetchone()
-
-            # Close the connection
-            connection.close()
+            tableID = self.cursor.fetchone()
             return tableID
         except sqlite3.Error as e:
             print(f"Database error: {e}")
@@ -352,20 +354,10 @@ class Database:
         AND Reservation.ResDate = ?
         """
         try:
-            connection = sqlite3.connect('restaurant.db')
-            cursor = connection.cursor()
-
             # Execute the query with the provided parameters
-            cursor.execute(query, (no_seats, res_time, res_date))
-
+            self.cursor.execute(query, (no_seats, res_time, res_date))
             # Fetch all matching rows as a list of tuples
-            reservations = cursor.fetchall()
-
-            # Close the connection
-            connection.close()
-
-            
-            
+            reservations = self.cursor.fetchall()
             return reservations
         except sqlite3.Error as e:
             print(f"Database error: {e}")
@@ -432,10 +424,9 @@ class Database:
     def checkInventory(self, item, size, expiration_date) -> bool:
         query = """
         SELECT *
-        FROM INVENTORY
-        WHERE ITEM = ?
-        AND SIZE = ?
-        AND EXPIRATION_DATE = ?
+        FROM Inventory
+        WHERE FoodType = ?
+        AND ExpirationDate = ?
         """
         self.cursor.execute(query, (item, size, expiration_date))
         if self.cursor.fetchall():
@@ -445,11 +436,10 @@ class Database:
     '''
     def getQuantity(self, item, size, expiration_date) -> int:
         query = """
-        SELECT Quantity
+        SELECT Amount
         FROM Inventory
-        WHERE ITEM = ?
-        AND SIZE = ?
-        AND EXPIRATION_DATE = ?
+        WHERE FoodType = ?
+        AND ExpirationDate = ?
         """
         self.cursor.execute(query, (item, size, expiration_date))
         quantity = self.cursor.fetchall()[0][0]

@@ -400,6 +400,10 @@
             showErrorMessage("You must select at least one table to reserve."); // Display error if no table(s) selected
             return;
         }
+        else {
+          fetch("/getSeatCount")
+              // TODO: DO THIS!!!!
+        }
         document.getElementById("error-message").style.display = "none";
         document.getElementById("sidePanel").classList.add("open");
     }
