@@ -147,6 +147,8 @@
     .error-message {
         color: red;
         text-align: center;
+        font-size: 3rem;
+        margin-top: 1rem;
     }
   
     .side-panel {
@@ -338,7 +340,7 @@
 
   <div>
     <button class="reserve-btn" onclick="openPanel()" id="finish-button">Select Date & Time</button>
-    <p class="error-message" style="display: none;" id="table-count-error">You must select at least one table to reseve.</p>
+    <p class="error-message" style="display: none;" id="error-message"></p>
   </div>
 
   <div class="side-panel" id="sidePanel">
@@ -380,18 +382,23 @@
             table.classList.add("table-selected");
         }
         else {
-            selectedTables = selectedTables.filter(e => e !== tableNumber);
+            selectedTables.splice(selectedTables.indexOf(tableNumber), 1);
             table.classList.remove("table-selected");
         }
     }
 
+    function showErrorMessage(message) {
+        const errorMessage = document.getElementById("error-message");
+        errorMessage.innerHTML = message;
+        errorMessage.style.display = "block";
+    }
+    
     function openPanel() {
-        const errorMessage = document.getElementById("table-count-error");
         if (selectedTables.length <= 0) {
-            errorMessage.style.display = "block"; // Display error if no table(s) selected
+            showErrorMessage("You must select at least one table to reserve."); // Display error if no table(s) selected
             return;
         }
-        errorMessage.style.display = "none";
+        document.getElementById("error-message").style.display = "none";
         document.getElementById("sidePanel").classList.add("open");
     }
 
@@ -400,10 +407,24 @@
     }
 
     function submitReservation() {
+      let notProvided = "";
       const guests = document.getElementById("guests").value;
+      if (!guests) {
+        notProvided += `${(notProvided ? ", " : "")}Guests`; // Technically don't need the conditional expression here but keeping it to look the same
+      }
       const reservationDate = document.getElementById("reservation-date").value;
+      if (!reservationDate) {
+        notProvided += `${(notProvided ? ", " : "")}Reservation Date`;
+      }
       const reservationTime = document.getElementById("reservation-time").value;
-      const tableIds = document.getElementById("sidePanel").dataset.tableIds;
+      if (!reservationTime) {
+        notProvided += `${(notProvided ? ", " : "")}Reservation Time`;
+      }
+
+      if (notProvided) {
+        showErrorMessage(`Error - No value given for: ${notProvided}`);
+        return;
+      }
 
       // Perform the AJAX request
       const xhr = new XMLHttpRequest();
@@ -413,7 +434,8 @@
       xhr.onload = function () {
         if (xhr.status === 200) {
           alert("Reservation successful!");
-          closePanel();  // Close the side panel on success
+          window.location.replace("/home");
+          // closePanel();
         } else {
           alert(xhr.responseText);
         }
@@ -424,7 +446,6 @@
         reservation_time: reservationTime,
         table_ids: selectedTables
       }
-      // `guests=${guests}&reservation_date=${reservationDate}&reservation_time=${reservationTime}&table_id=${tableId}`
       
       if (typeof reservationId !== 'undefined' && reservationId !== null) {
         data.reservation_id = reservationId;
