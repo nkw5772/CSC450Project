@@ -166,15 +166,16 @@ def ordering():
 def submitorder():
     try:
     # Gets data from ordering form
-        item = request.form.get('item')
-        size = request.form.get('size')
-        quantity = request.form.get('quantity')
-        expiration_date = (datetime.now() + timedelta(weeks=2)).date()
+        item = request.form.get('item')  # Corresponds to "Item" column
+        size = request.form.get('size')  # Corresponds to "Size" column
+        quantity = int(request.form.get('quantity'))  # Quantity as integer
+        expiration_date = (datetime.now() + timedelta(weeks=2)).strftime('%Y-%m-%d')  # 2 weeks from now
 
         db = Database()
 
+        db.order_meat(item, size, quantity, expiration_date)
 
-        return jsonify({'message': 'Reservation successful!'}), 200
+        return jsonify({'message': 'Order submitted successfully!'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 ###
