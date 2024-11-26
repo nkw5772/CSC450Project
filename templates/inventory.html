@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Reservations</title>
+    <title>Inventory</title>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <style>
         * {
@@ -11,18 +11,18 @@
             margin: 0;
             padding: 0;
         }
-    
+
         body {
             font-family: Arial, sans-serif;
             background-color: #f2f2f2;
             display: flex;
-            flex-direction: column; /* Stack the navbar and content vertically */
-            justify-content: flex-start; /* Content should start from the top, under the navbar */
-            align-items: center; /* Center content horizontally */
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
             min-height: 100vh;
-            padding-top: 0; /* Ensure no extra space above the navbar */
+            padding-top: 0;
         }
-    
+
         .navbar {
             display: flex;
             justify-content: space-between;
@@ -34,9 +34,9 @@
             position: sticky;
             top: 0;
             width: 100%;
-            z-index: 1000; /* Ensure it stays on top of other content */
+            z-index: 1000;
         }
-    
+
         .navbar a {
             color: #ffffff;
             text-decoration: none;
@@ -44,22 +44,25 @@
             font-size: 16px;
             transition: color 0.3s;
         }
-    
+
         .navbar a:hover {
             color: #ff6600;
         }
-    
+
         .form-container, .table-container {
             background-color: #ffffff;
             padding: 40px;
             border-radius: 12px;
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-            width: 500px;
-            max-width: 90%;
+            width: 100%;
+            max-width: 1500px; /* Adjust max width to a larger value */
             margin-bottom: 30px;
             margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-    
+
         h1 {
             color: #ffffff;
             text-align: left;
@@ -67,25 +70,25 @@
             margin-left: 5px;
             font-size: 27px;
         }
-    
+
         h2 {
             color: #1181f5;
             text-align: center;
             margin-bottom: 20px;
             font-size: 27px;
         }
-    
+
         label {
             color: #333333;
             font-weight: bold;
             margin-bottom: 5px;
             display: block;
         }
-    
+
         button {
             width: 100%;
             padding: 12px;
-            background-color: #ff6600; 
+            background-color: #ff6600;
             color: #ffffff;
             border: none;
             border-radius: 6px;
@@ -95,32 +98,32 @@
             transition: background-color 0.3s;
             margin-top: 10px;
         }
-    
+
         button:hover {
-            background-color: #e65c00; 
+            background-color: #e65c00;
         }
-    
+
         .table-container table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
         }
-    
+
         .table-container th, .table-container td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #dddddd;
         }
-    
+
         .table-container th {
             background-color: #f8f8f8;
             color: #1181f5;
         }
-    
+
         .table-container tr:hover {
             background-color: #f1f1f1;
         }
-    
+
         .alert {
             padding: 10px;
             margin-top: 10px;
@@ -131,19 +134,19 @@
             bottom: 0;
             left: 0;
         }
-    
+
         .alert-success {
             background-color: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
         }
-    
+
         .alert-danger {
             background-color: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
-    
+
         .closebtn {
             margin-left: 15px;
             color: white;
@@ -154,18 +157,15 @@
             cursor: pointer;
             transition: 0.3s;
         }
-    
+
         .closebtn:hover {
             color: black;
         }
     </style>
-    
-    
-    
 </head>
 <body>
     <div class="navbar">
-        <h1>My Reservations</h1>
+        <h1>Inventory</h1>
         <div class="brand">CSC450Project</div>
         <div>
             <a href="/home">Home</a>                
@@ -179,6 +179,7 @@
             {% endif %}                
         </div>
     </div>
+
     {% if message %}
         <div class="alert alert-success">
             <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>
@@ -192,35 +193,38 @@
     {% endif %}
 
     <div class="table-container">
-        <h2>{{ name }}'s Reservations</h2>
-        {% if reservations %}
-        <table id="reservation-table">
+        <h2>Inventory</h2>
+        {% if inventory %}
+        <table id="inventory-table">
             <thead>
                 <tr>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>No. Guests</th>
-                    <th>Table No.</th>
-                    <th>Modify</th>
-                    <th>Cancel</th>
+                    <th>InventoryID</th>
+                    <th>FoodType</th>
+                    <th>Quantity</th>
+                    <th>Size</th>
+                    <th>PurchaseDate</th>
+                    <th>PurchaseTime</th>
+                    <th>ExpirationDate</th>
+                    <th>ExpirationTime</th>
+                    <th>InventoryStatus</th>
+                    <th>Remove</th>
                 </tr>
             </thead>
-            <tbody id="reservation-table-body">
-                {% for row in reservations %}
+            <tbody id="inventory-table-body">
+                {% for row in inventory %}
                     <tr>
                         <td>{{ row[0] }}</td>
                         <td>{{ row[1] }}</td>
                         <td>{{ row[2] }}</td>
                         <td>{{ row[3] }}</td>
+                        <td>{{ row[4] }}</td>
+                        <td>{{ row[5] }}</td>
+                        <td>{{ row[6] }}</td>
+                        <td>{{ row[7] }}</td>
+                        <td>{{ row[8] }}</td>
                         <td>
-                            <form action="/reservation" method="POST" style="display:inline;">
-                                <input type="hidden" name="reservation_id" value="{{ row[4] }}">
-                                <button type="submit">⚙️</button>
-                            </form>
-                        </td>
-                        <td>
-                            <form action="/myReservations" method="POST" style="display:inline;" onsubmit="return confirmCancel();">
-                                <input type="hidden" name="reservation_id" value="{{ row[4] }}">
+                            <form action="/inventory" method="POST" style="display:inline;" onsubmit="return confirmCancel();">
+                                <input type="hidden" name="inventory_id" value="{{ row[0] }}">
                                 <button type="submit">✖</button>
                             </form>
                         </td>
@@ -229,12 +233,13 @@
             </tbody>
         </table>
         {% else %}
-        <h4>No upcoming reservations. Schedule one!</h4>
+        <h4>No items in inventory.</h4>
         {% endif %}
     </div>
+
     <script>
         function confirmCancel() {
-            return confirm("Are you sure you want to cancel this reservation?");
+            return confirm("Are you sure you want to remove this item?");
         }
     </script>
 </body>

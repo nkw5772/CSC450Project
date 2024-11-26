@@ -403,25 +403,32 @@ class Database:
     ###
     # This is kinda a guess until we get a proper ordering page up
     # Still need to figure out how we are gunna do expiration date and stuff, maybe make a file for holding each item data?
-    def order_meat(self, item, size, quantity: str, expiration_date: str) -> None:
+    def order_meat(self, foodType, quantity, size, purchaseDate, purchaseTime, expirationDate, expirationTime, inventoryStatus) -> None:
         query = """
-        INSERT INTO Inventory (Item, Size, Quantity, Expiration_Date)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO Inventory (FoodType, Quantity, Size, PurchaseDate, PurchaseTime, ExpirationDate, ExpirationTime, InventoryStatus)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """
-        if self.checkInventory(item, size, expiration_date):
-            query = """
-            UPDATE INVENTORY SET
-            QUANTITY = ?
-            WHERE ITEM = ?
-            AND SIZE = ?
-            AND EXPIRATION_DATE = ?
-            """
-            quantity += self.getQuantity(item, size, expiration_date)
-            self.cursor.execute(query, (quantity, item, size, expiration_date))
-        else:
-            self.cursor.execute(query, (item, size, quantity, expiration_date))
+        params = (foodType, quantity, size, purchaseDate, purchaseTime, expirationDate, expirationTime, inventoryStatus)
+        self.cursor.execute(query, params)
         self.database.commit()
     
+    def getInventory(self):
+        query = """
+        SELECT *
+        FROM INVENTORY
+        ORDER BY INVENTORYID
+        """
+        self.cursor.execute(query)
+        return self.cursor.fetchall()
+    
+    def removeItem(self, InventoryID):
+        query = """
+        DELETE FROM INVENTORY
+        WHERE InventoryID = ?;
+        """
+        self.cursor.execute(query, (InventoryID,))
+        self.database.commit()
+    '''
     def checkInventory(self, item, size, expiration_date) -> bool:
         query = """
         SELECT *
@@ -434,7 +441,8 @@ class Database:
         if self.cursor.fetchall():
             return True
         return False
-
+    '''
+    '''
     def getQuantity(self, item, size, expiration_date) -> int:
         query = """
         SELECT Quantity
@@ -446,6 +454,7 @@ class Database:
         self.cursor.execute(query, (item, size, expiration_date))
         quantity = self.cursor.fetchall()[0][0]
         return quantity
+    '''
     ###
     #endregion INVENTORY
     ###

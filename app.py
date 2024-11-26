@@ -168,15 +168,24 @@ def ordering():
 def submitorder():
     try:
     # Gets data from ordering form
-        item = request.form.get('item')
-        size = request.form.get('size')
+        foodType = request.form.get('item')
         quantity = request.form.get('quantity')
-        expiration_date = (datetime.now() + timedelta(weeks=2)).date()
+        size = request.form.get('size')
+        currentTime = datetime.now()
+        purchaseDate = currentTime.strftime("%Y-%m-%d")
+        purchaseTime = currentTime.strftime("%H:%M:%S")
+        futureTime = datetime.now() + timedelta(weeks=2)
+        expirationDate = futureTime.strftime("%Y-%m-%d")
+        expirationTime = futureTime.strftime("%H:%M:%S")
+        inventoryStatus = "Ordered"
 
         db = Database()
 
+        db.order_meat(foodType, quantity, size, purchaseDate, purchaseTime, expirationDate, expirationTime, inventoryStatus)
 
-        return jsonify({'message': 'Reservation successful!'}), 200
+
+
+        return render_template('ordering.html')
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 ###
@@ -300,6 +309,17 @@ def my_reservations():
             return render_template('myReservations.html', name = name, reservations = reservations, error = 'Unable to cancel reservation. Oops lmao')
 
     return render_template('myReservations.html', name = name, reservations = reservations)
+
+@app.route('/inventory', methods=['GET', 'POST'])
+def inventory():
+    db = Database()
+    inventory = db.getInventory()
+
+    if request.method == 'POST': # If removing an item
+        inventoryID = request.form.get('inventory_id')
+        db.removeItem(inventoryID)
+
+    return render_template('inventory.html', inventory = inventory)
 ###
 #endregion RESERVATIONS
 ###
