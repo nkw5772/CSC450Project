@@ -43,6 +43,7 @@ disable_login_limit = False # Toggles whether login attempt rate is limited (ena
 @app.route('/', methods=['GET', 'POST'])
 # @limiter.limit("5 per minute")
 def login():
+    session.pop('reservation_chosen', None)
     if 'email' in session:
         return redirect(url_for('home'))
      # Track login attempts using sessions
@@ -152,6 +153,7 @@ def createAccount():
 
 @app.route("/home")
 def home():
+    session.pop('reservation_chosen', None)
     if 'email' not in session:
         return redirect(url_for('login'))
     disable_script = """
@@ -176,6 +178,8 @@ def home():
 ###
 @app.route("/ordering", methods=['GET', 'POST'])
 def ordering():
+    session.pop('reservation_chosen', None)
+
     # Need to make it so only employees can get here
     return render_template('ordering.html')
 
@@ -336,6 +340,10 @@ def reservationInfo():
         # db = Database()
         # something = db.filter_reservations(reservation_time, reservation_date)
         # print(something)
+        minutes = reservation_time[3:5]
+        # if minutes != "00" and minutes != "30":
+        #     some_error = "Reservation time must end in :00 or :30"
+        #     return render_template('reservationInfo.html', some_error=some_error)
         table_numbers = []
         db = Database()
         reserved_tables = db.filter_reservations(reservation_date)
@@ -364,6 +372,8 @@ def get_seat_count():
 
 @app.route('/myReservations', methods=['GET', 'POST'])
 def my_reservations():
+    session.pop('reservation_chosen', None)
+
     db = Database()
     
     name = db.get_name_from_email(session['email'])[0]
@@ -382,6 +392,8 @@ def my_reservations():
 
 @app.route('/inventory', methods=['GET', 'POST'])
 def inventory():
+    session.pop('reservation_chosen', None)
+
     db = Database()
     inventory = db.getInventory()
 
