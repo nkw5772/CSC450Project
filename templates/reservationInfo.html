@@ -170,7 +170,7 @@
         <label for="reservation-time">Reservation Time</label>
         <input type="time" id="reservation-time" name="reservation_time" min="10:00" max="20:00" required>
       </div>
-      <p id="error_message" class="error_message">{{error_message}}</p>
+      <p id="error_message" class="error_message" style="color: red; margin-bottom: 10px; font-weight: bold; text-align: center;">{{some_error}}</p>
       <button type="submit" class="submit-button">Check availability</button>
       <p id="error_message" class="error_message">{{error_message}}</p>
     </form>
@@ -188,5 +188,20 @@
     const dateInput = document.getElementById('reservation-date');
     dateInput.min = minDate;
     dateInput.max = maxDate;
+
+    function validateTimeEnding() {
+        const reservationTime = document.getElementById('reservation-time').value;
+        const minutes = reservationTime.substring(3, 5);
+        
+        // Check if the input time ends in "00" or "30"
+        if (minutes !== "00" && minutes !== "30") {
+            document.getElementById('error_message').textContent = 'Reservation time must end in :00 or :30.';
+            return false;  // Prevent form submission
+        }
+        
+        // If the time is valid, clear any previous error messages
+        document.getElementById('error_message').textContent = '';
+        return true;  // Allow form submission
+    }
   </script>
 

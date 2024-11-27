@@ -329,6 +329,10 @@ def reservationInfo():
         # db = Database()
         # something = db.filter_reservations(reservation_time, reservation_date)
         # print(something)
+        minutes = reservation_time[3:5]
+        # if minutes != "00" and minutes != "30":
+        #     some_error = "Reservation time must end in :00 or :30"
+        #     return render_template('reservationInfo.html', some_error=some_error)
         table_numbers = []
         db = Database()
         reserved_tables = db.filter_reservations(reservation_date)
