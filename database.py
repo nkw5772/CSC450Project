@@ -339,23 +339,45 @@ class Database:
         except Exception as e:
             print(f"Unexpected error: {e}")
             return []
-    def filter_reservations(self, res_time, res_date):
+    def filter_reservations(self, res_date):
         # query = """
         # SELECT * FROM Reservation
         # WHERE ResNoGuests = ? AND ResTime = ? AND ResDate = ?
         # """
-        query = """SELECT ReservedSeats.TableID
+        # AND (
+        #         (r.ResTime <= ? AND DATETIME(r.ResTime, '+60 minutes') > ?)
+        #         OR (r.ResTime >= ? AND DATETIME(?, '+60 minutes') > r.ResTime)
+        #     )
+        
+        
+
+# Ensure res_time is in HH:MM:00 format (add seconds)
+        
+
+# Add 60 minutes to res_time
+        
+        # query = """SELECT ReservedSeats.TableID
+        # FROM Reservation
+        # JOIN ReservedSeats ON Reservation.ResID = ReservedSeats.ResID
+        # WHERE Reservation.ResDate = ?
+        # AND (
+		# Reservation.ResTime BETWEEN ? AND ?
+		# )
+        # """
+        
+        query = """SELECT ReservedSeats.TableID, Reservation.ResTime
         FROM Reservation
         JOIN ReservedSeats ON Reservation.ResID = ReservedSeats.ResID
-        WHERE Reservation.ResTime = ? 
-        AND Reservation.ResDate = ?
-        """
+        WHERE Reservation.ResDate = ?"""
+        
+
+        
         try:
             connection = sqlite3.connect('restaurant.db')
             cursor = connection.cursor()
 
             # Execute the query with the provided parameters
-            cursor.execute(query, (res_time, res_date))
+            cursor.execute(query, (res_date,))
 
             # Fetch all matching rows as a list of tuples
             reservations = cursor.fetchall()
@@ -364,7 +386,7 @@ class Database:
             connection.close()
             empty_list = []
             for i in reservations:
-                empty_list.append(i[0])
+                empty_list.append(i)
             return empty_list
         except sqlite3.Error as e:
             print(f"Database error: {e}")

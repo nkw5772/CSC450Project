@@ -8,6 +8,7 @@ from flask_limiter.util import get_remote_address
 import time
 import threading
 import os
+import json
 
 ###
 #region GLOBAL
@@ -188,6 +189,15 @@ def submitorder():
 ###
 @app.route("/reservation", methods=['GET', 'POST'])
 def reservations():
+    reserved_tables_json = request.args.get('reserved_tables')
+    table_size = request.args.get('table_size')
+    reservation_time = request.args.get('reservation_time')
+    reservation_time_plus_60 = request.args.get('reservation_time_plus_60')
+    if reserved_tables_json:
+        # Convert the JSON string back to a Python list
+        reserved_tables = json.loads(reserved_tables_json)
+    else:
+        reserved_tables = []
     if 'email' not in session:
         return redirect(url_for('login'))
     if request.method == 'POST': # When modifying a res through /myReservations
@@ -196,7 +206,7 @@ def reservations():
     db = Database()
     wait_time = db.calculate_wait_time()
     print(f"wait time, debugging porpoises: {wait_time}")
-    return render_template('reservation.html', wait_time=wait_time)
+    return render_template('reservation.html', wait_time=wait_time, reserved_tables=reserved_tables, table_size=table_size, reservation_time=reservation_time, reservation_time_plus_60=reservation_time_plus_60)
 
 @app.route('/reserve', methods=['POST'])
 def reserve_table():
@@ -285,14 +295,25 @@ def reservationInfo():
         table_size = request.form.get('table_size')
         reservation_date = request.form.get('reservation_date')
         reservation_time = request.form.get('reservation_time')
+        
         # db = Database()
         # something = db.filter_reservations(reservation_time, reservation_date)
         # print(something)
+        table_numbers = []
         db = Database()
-        reserved_tables = db.filter_reservations(reservation_time, reservation_date)
+        reserved_tables = db.filter_reservations(reservation_date)
+        for i in reserved_tables:
+            res_time_obj = datetime.strptime(i[1], "%H:%M")
         
-        print(reserved_tables)
+            # Add 60 minutes to the reservation_time
+            res_time_plus_60_obj = res_time_obj + timedelta(minutes=60)
+            reservation_time_plus_60 = res_time_plus_60_obj.strftime("%H:%M")
+            if reservation_time >= i[1]  and reservation_time < reservation_time_plus_60:
+                table_numbers.append(i[0])
         
+        reserved_tables_json = json.dumps(table_numbers)
+        
+        return redirect(url_for('reservations',reserved_tables=reserved_tables_json, table_size=table_size, reservation_date=reservation_date, reservation_time=reservation_time,reservation_time_plus_60=reservation_time_plus_60))
     
     return render_template('reservationInfo.html')
 

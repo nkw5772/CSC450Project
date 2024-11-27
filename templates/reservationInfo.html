@@ -151,12 +151,12 @@
     </div>
 </div>
 
-<div class="form-container">
+<div class="form-container" style="margin-top: 50px">
     <h2>Make a Reservation</h2>
     <form action="/reservationInfo" method="POST">
       <div class="form-group">
         <label for="table-size">Table Size</label>
-        <input type="number" id="table-size" name="table_size" min="1" max="20" required>
+        <input type="number" id="table-size" name="table_size" min="1" max="30" required>
       </div>
       <p id="error_message" class="error_message">{{error_message}}</p>
       <div class="form-group">
@@ -166,12 +166,25 @@
       <p id="error_message" class="error_message">{{error_message}}</p>
       <div class="form-group">
         <label for="reservation-time">Reservation Time</label>
-        <input type="time" id="reservation-time" name="reservation_time" required>
+        <input type="time" id="reservation-time" name="reservation_time" min="10:00" max="20:00" required>
       </div>
       <p id="error_message" class="error_message">{{error_message}}</p>
-      <button type="submit" class="submit-button">Reserve</button>
+      <button type="submit" class="submit-button">Check availability</button>
       <p id="error_message" class="error_message">{{error_message}}</p>
     </form>
   </div>
 </body>
 </html>
+<script>
+    const today = new Date();
+    const nextYear = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+  
+    // Format dates to `YYYY-MM-DD`
+    const minDate = today.toISOString().split('T')[0];
+    const maxDate = nextYear.toISOString().split('T')[0];
+  
+    const dateInput = document.getElementById('reservation-date');
+    dateInput.min = minDate;
+    dateInput.max = maxDate;
+  </script>
+
