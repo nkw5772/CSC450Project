@@ -196,6 +196,8 @@ def submitorder():
 ###
 @app.route("/reservation", methods=['GET', 'POST'])
 def reservations():
+    
+    
     reserved_tables_json = request.args.get('reserved_tables')
     table_size = request.args.get('table_size')
     reservation_time = request.args.get('reservation_time')
@@ -297,6 +299,10 @@ def confirmCheckIn():
 
 @app.route('/reservationInfo', methods=['GET', 'POST'])
 def reservationInfo():
+    
+    if 'email' not in session:
+        return redirect(url_for('login'))
+    
     if request.method == 'POST':
         
         table_size = request.form.get('table_size')
@@ -320,7 +326,7 @@ def reservationInfo():
         
         reserved_tables_json = json.dumps(table_numbers)
         
-        return redirect(url_for('reservations',reserved_tables=reserved_tables_json, table_size=table_size, reservation_date=reservation_date, reservation_time=reservation_time,reservation_time_plus_60=reservation_time_plus_60))
+        return redirect(url_for('reservations',reserved_tables=reserved_tables_json, table_size=table_size, reservation_date=reservation_date, reservation_time=reservation_time))
     
     return render_template('reservationInfo.html')
 
