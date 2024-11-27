@@ -287,6 +287,15 @@ class Database:
         average = total_sum / total_rows if total_rows > 0 else 0
         return round(average, 0)
 
+    def get_table_seat_count(self, tables: list) -> int:
+        command = f"""
+        SELECT SUM(TableNoSeats)
+        FROM Seating
+        WHERE TableID IN ({', '.join(['?'] * len(tables))})
+        """
+        params = tuple(list)
+        self.cursor.execute(command, params)
+        return self.cursor.fetchone()[0] # User should never be able to call this without selecting >= 1 tables
     ###
     #endregion RESERVATIONS
     ###
@@ -321,17 +330,10 @@ class Database:
         SELECT TableID FROM ReservedSeats WHERE ResID = ?
         """
         try:
-            connection = sqlite3.connect('restaurant.db')
-            cursor = connection.cursor()
-
             # Execute the query with the provided parameters
-            cursor.execute(query, (resID))
-
+            self.cursor.execute(query, (resID,))
             # Fetch all matching rows as a list of tuples
-            tableID = cursor.fetchone()
-
-            # Close the connection
-            connection.close()
+            tableID = self.cursor.fetchone()
             return tableID
         except sqlite3.Error as e:
             print(f"Database error: {e}")
@@ -373,21 +375,11 @@ class Database:
 
         
         try:
-            connection = sqlite3.connect('restaurant.db')
-            cursor = connection.cursor()
-
             # Execute the query with the provided parameters
-            cursor.execute(query, (res_date,))
-
+            self.cursor.execute(query, (res_date,))
             # Fetch all matching rows as a list of tuples
-            reservations = cursor.fetchall()
-
-            # Close the connection
-            connection.close()
-            empty_list = []
-            for i in reservations:
-                empty_list.append(i)
-            return empty_list
+            reservations = self.cursor.fetchall()
+            return reservations
         except sqlite3.Error as e:
             print(f"Database error: {e}")
             return []
@@ -424,49 +416,56 @@ class Database:
     ###
     # This is kinda a guess until we get a proper ordering page up
     # Still need to figure out how we are gunna do expiration date and stuff, maybe make a file for holding each item data?
-    def order_meat(self, item, size, quantity: str, expiration_date: str) -> None:
+    def order_meat(self, foodType, quantity, size, purchaseDate, purchaseTime, expirationDate, expirationTime, inventoryStatus) -> None:
         query = """
-        INSERT INTO Inventory (Item, Size, Quantity, Expiration_Date)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO Inventory (FoodType, Quantity, Size, PurchaseDate, PurchaseTime, ExpirationDate, ExpirationTime, InventoryStatus)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """
-        if self.checkInventory(item, size, expiration_date):
-            query = """
-            UPDATE INVENTORY SET
-            QUANTITY = ?
-            WHERE ITEM = ?
-            AND SIZE = ?
-            AND EXPIRATION_DATE = ?
-            """
-            quantity += self.getQuantity(item, size, expiration_date)
-            self.cursor.execute(query, (quantity, item, size, expiration_date))
-        else:
-            self.cursor.execute(query, (item, size, quantity, expiration_date))
+        params = (foodType, quantity, size, purchaseDate, purchaseTime, expirationDate, expirationTime, inventoryStatus)
+        self.cursor.execute(query, params)
         self.database.commit()
     
-    def checkInventory(self, item, size, expiration_date) -> bool:
+    def getInventory(self):
         query = """
         SELECT *
         FROM INVENTORY
-        WHERE ITEM = ?
-        AND SIZE = ?
-        AND EXPIRATION_DATE = ?
+        ORDER BY INVENTORYID
+        """
+        self.cursor.execute(query)
+        return self.cursor.fetchall()
+    
+    def removeItem(self, InventoryID):
+        query = """
+        DELETE FROM INVENTORY
+        WHERE InventoryID = ?;
+        """
+        self.cursor.execute(query, (InventoryID,))
+        self.database.commit()
+    '''
+    def checkInventory(self, item, size, expiration_date) -> bool:
+        query = """
+        SELECT *
+        FROM Inventory
+        WHERE FoodType = ?
+        AND ExpirationDate = ?
         """
         self.cursor.execute(query, (item, size, expiration_date))
         if self.cursor.fetchall():
             return True
         return False
-
+    '''
+    '''
     def getQuantity(self, item, size, expiration_date) -> int:
         query = """
-        SELECT Quantity
+        SELECT Amount
         FROM Inventory
-        WHERE ITEM = ?
-        AND SIZE = ?
-        AND EXPIRATION_DATE = ?
+        WHERE FoodType = ?
+        AND ExpirationDate = ?
         """
         self.cursor.execute(query, (item, size, expiration_date))
         quantity = self.cursor.fetchall()[0][0]
         return quantity
+    '''
     ###
     #endregion INVENTORY
     ###
