@@ -1,5 +1,5 @@
 
-from flask import Flask, render_template, redirect, flash, url_for, request, jsonify, session, make_response
+from flask import Flask, render_template, redirect, flash, url_for, request, jsonify, session, make_response, Response
 from hashlib import sha256
 from database import Database
 from datetime import datetime, timedelta
@@ -34,9 +34,16 @@ disable_login_limit = False # Toggles whether login attempt rate is limited (ena
 # Define the route for the login page
 # This page is the root page of the application
 # This will eventually query the database and check the credentials.
+
+
+    
+
+
+
 @app.route('/', methods=['GET', 'POST'])
 # @limiter.limit("5 per minute")
 def login():
+    session.pop('reservation_chosen', None)
     if 'email' in session:
         return redirect(url_for('home'))
      # Track login attempts using sessions
@@ -61,6 +68,16 @@ def login():
 
         email = request.form.get('email')
         password_hash = sha256(request.form.get('password').encode('utf-8')).hexdigest()
+
+        # If either are null somehow, don't go any further
+        missing = None
+        if not email:
+            missing = 'email'
+        elif not password_hash:
+            missing = 'password'
+        if missing:
+            error_message = f'Please provide a {missing}.'
+            return render_template('login.html', error_message)
         
         # Check if the credentials are correct
         if db.verify_login(email, password_hash): 
@@ -136,6 +153,7 @@ def createAccount():
 
 @app.route("/home")
 def home():
+    session.pop('reservation_chosen', None)
     if 'email' not in session:
         return redirect(url_for('login'))
     disable_script = """
@@ -160,6 +178,8 @@ def home():
 ###
 @app.route("/ordering", methods=['GET', 'POST'])
 def ordering():
+    session.pop('reservation_chosen', None)
+
     # Need to make it so only employees can get here
     return render_template('ordering.html')
 
@@ -194,10 +214,21 @@ def submitorder():
 ###
 #region RESERVATIONS
 ###
+def no_cache(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
 @app.route("/reservation", methods=['GET', 'POST'])
 def reservations():
+    if 'email' not in session:
+        return redirect(url_for('login'))
+    if 'reservation_chosen' not in session:
+        flash('You must select reservation info first.')
+        return redirect(url_for('reservationInfo'))
     reserved_tables_json = request.args.get('reserved_tables')
-    table_size = request.args.get('table_size')
+    seat_count = request.args.get('seat_count')
     reservation_time = request.args.get('reservation_time')
     reservation_time_plus_60 = request.args.get('reservation_time_plus_60')
     if reserved_tables_json:
@@ -205,16 +236,14 @@ def reservations():
         reserved_tables = json.loads(reserved_tables_json)
     else:
         reserved_tables = []
-    if 'email' not in session:
-        return redirect(url_for('login'))
     if request.method == 'POST': # When modifying a res through /myReservations
         res_id = request.form.get('reservation_id')
         return render_template('reservation.html', res_id = res_id)
     db = Database()
     wait_time = db.calculate_wait_time()
-    print(f"wait time, debugging porpoises: {wait_time}")
-    return render_template('reservation.html', wait_time=wait_time, reserved_tables=reserved_tables, table_size=table_size, reservation_time=reservation_time, reservation_time_plus_60=reservation_time_plus_60)
-
+    # print(f"wait time, debugging porpoises: {wait_time}")
+    return render_template('reservation.html', wait_time=wait_time, reserved_tables=reserved_tables, seat_count=seat_count, reservation_time=reservation_time, reservation_time_plus_60=reservation_time_plus_60)
+    
 @app.route('/reserve', methods=['POST'])
 def reserve_table():
     try:
@@ -295,17 +324,26 @@ def confirmCheckIn():
         error = 'Failed to check in reservation.'
         return render_template('checkInReservation.html', resSearch=resSearch, error=error)
 
+
 @app.route('/reservationInfo', methods=['GET', 'POST'])
 def reservationInfo():
+    session.pop('reservation_chosen', None)
+    if 'email' not in session:
+        return redirect(url_for('login'))
+    
     if request.method == 'POST':
         
-        table_size = request.form.get('table_size')
+        seat_count = request.form.get('seat_count')
         reservation_date = request.form.get('reservation_date')
         reservation_time = request.form.get('reservation_time')
         
         # db = Database()
         # something = db.filter_reservations(reservation_time, reservation_date)
         # print(something)
+        minutes = reservation_time[3:5]
+        # if minutes != "00" and minutes != "30":
+        #     some_error = "Reservation time must end in :00 or :30"
+        #     return render_template('reservationInfo.html', some_error=some_error)
         table_numbers = []
         db = Database()
         reserved_tables = db.filter_reservations(reservation_date)
@@ -315,25 +353,28 @@ def reservationInfo():
             # Add 60 minutes to the reservation_time
             res_time_plus_60_obj = res_time_obj + timedelta(minutes=60)
             reservation_time_plus_60 = res_time_plus_60_obj.strftime("%H:%M")
-            if reservation_time >= i[1]  and reservation_time < reservation_time_plus_60:
+            if reservation_time >= i[1] and reservation_time < reservation_time_plus_60:
                 table_numbers.append(i[0])
         
         reserved_tables_json = json.dumps(table_numbers)
         
-        return redirect(url_for('reservations',reserved_tables=reserved_tables_json, table_size=table_size, reservation_date=reservation_date, reservation_time=reservation_time))
+        session['reservation_chosen'] = 'reservation_status'
+        return redirect(url_for('reservations',reserved_tables=reserved_tables_json, seat_count=seat_count, reservation_date=reservation_date, reservation_time=reservation_time))
     
     return render_template('reservationInfo.html')
-
+    
 @app.route('/getSeatCount', methods=['POST'])
-def getSeatCount():
-    data = request.get_json()['tables']
+def get_seat_count():
+    tables = request.get_json()
 
     db = Database()
 
-    db.get_table_seat_count()
+    return jsonify(db.get_table_seat_count(tables))
 
 @app.route('/myReservations', methods=['GET', 'POST'])
 def my_reservations():
+    session.pop('reservation_chosen', None)
+
     db = Database()
     
     name = db.get_name_from_email(session['email'])[0]
@@ -352,6 +393,8 @@ def my_reservations():
 
 @app.route('/inventory', methods=['GET', 'POST'])
 def inventory():
+    session.pop('reservation_chosen', None)
+
     db = Database()
     inventory = db.getInventory()
 

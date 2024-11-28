@@ -88,6 +88,7 @@
       width: 90%;
       min-height: 100vh; /* Extends the layout container to full viewport height */
       margin: auto; /* Center layout */
+      margin-bottom: 175px; /* padding for bottom pane */
       padding: 20px;
       background-color: #e8e8e8;
       border-radius: 10px;
@@ -141,78 +142,73 @@
     }
   
     .kitchen {
-      background-color: #ff6600;
+      background-color: #999999;
     }
 
     .error-message {
-        color: red;
-        text-align: center;
-        font-size: 3rem;
-        margin-top: 1rem;
+      color: red;
+      text-align: center;
+      font-size: 3rem;
+      margin-top: 1rem;
     }
-  
-    .side-panel {
+
+    .bottom-pane {
       position: fixed;
-      top: 0;
-      right: -400px;
-      width: 400px;
-      height: 100%;
-      background-color: #fff;
-      box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);
-      transition: right 0.3s ease;
+      bottom: 0;
+      width: 100%;
+      background-color: #1181f5;
+      color: white;
       padding: 20px;
-      overflow-y: auto;
-    }
-  
-    .side-panel.open {
-      right: 0;
-    }
-  
-    .side-panel h3 {
-      font-size: 24px;
-      color: #333;
-      margin-bottom: 20px;
-    }
-  
-    .close-btn {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      font-size: 18px;
-      color: #333;
-      background: none;
-      border: none;
-      cursor: pointer;
-    }
-  
-    .side-panel .reservation-form {
       display: flex;
-      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
+      z-index: 10; /* Ensure the pane is above other content */
+    }
+
+    .reservation-summary {
+      font-size: 16px;
+    }
+
+    .reservation-summary h3 {
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+    .button-group {
+      display: flex;
       gap: 10px;
     }
-  
-    .side-panel .reservation-form label {
-      font-weight: bold;
-    }
-  
-    .side-panel .reservation-form input {
-      padding: 8px;
-      margin: 5px 0;
+
+    .back-btn {
       font-size: 16px;
+      padding: 10px 20px;
+      background-color: #555;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
     }
-  
-    .side-panel .reserve-btn {
-      padding: 10px;
+
+    .back-btn:hover {
+      background-color: #333;
+    }
+
+    .bottom-pane .reserve-btn {
       font-size: 16px;
+      padding: 10px 20px;
       background-color: #ff6600;
       color: white;
       border: none;
+      border-radius: 5px;
       cursor: pointer;
+      transition: background-color 0.3s ease;
     }
-  
-    .side-panel .reserve-btn:hover {
-      background-color: #0073e6;
+
+    .bottom-pane .reserve-btn:hover {
+      background-color: #9ed97e;
     }
+
     .table.reserved {
       background-color: #d3d3d3; /* Light gray color */
       cursor: not-allowed; /* Makes the table non-clickable */
@@ -229,18 +225,20 @@
     <h1>Reservation</h1>
     <div class="brand">CSC450Project</div>
     <div>
-        <a href="/home">Home</a>                
-        {% if session.get('email') %}
-            <a href="/myReservations">My Reservations</a>
-            <a href="/ordering">Order</a>
-            <a href="/inventory">Inventory</a>
-            <a href="/logout">Logout</a>
-        {% else %}
-            <a href="/login">Login</a>
-        {% endif %}                
+      <a href="/home">Home</a>                
+      {% if session.get('email') %}
+        <a href="/myReservations">My Reservations</a>
+        <a href="/ordering">Order</a>
+        <a href="/inventory">Inventory</a>
+        <a href="/logout">Logout</a>
+      {% else %}
+        <a href="/login">Login</a>
+      {% endif %}                
     </div>
 </div>
-  <h1>{{reserved_tables}}</h1>
+  {% if reserved_tables %}
+    <h1>{{reserved_tables}}</h1>
+  {% endif %}
   <div class="main-content">
     {% if res_id %}
       <h2>Modify Your Table Today!</h2>
@@ -255,124 +253,117 @@
   <div class="restaurant-layout">
     <div class="entrance">Entrance</div>
     
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 1 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(1)" id="1">1</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 2 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(2)" id="2">2</div>
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 3 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(3)" id="3">3</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 4 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(4)" id="4">4</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 1 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(1)" id="1">1</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 2 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(2)" id="2">2</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 3 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(3)" id="3">3</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 4 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(4)" id="4">4</div>
     
-    <div class="table table-small {% if 5 in reserved_tables %}reserved{% endif %} {% if table_size|int > 2 %}toosmall{% endif %}" onclick="toggleTableInRes(5)" id="5">5</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 6 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(6)" id="6">6</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 7 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(7)" id="7">7</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 8 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(8)" id="8">8</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 5 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(5)" id="5">5</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 6 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(6)" id="6">6</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 7 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(7)" id="7">7</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 8 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(8)" id="8">8</div>
 
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 9 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(9)" id="9">9</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 10 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(10)" id="10">10</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 11 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(11)" id="11">11</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 12 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(12)" id="12">12</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 9 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(9)" id="9">9</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 10 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(10)" id="10">10</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 11 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(11)" id="11">11</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 12 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(12)" id="12">12</div>
 
-    <div class="table table-extra-large {% if table_size|int > 13 %}toosmall{% endif %} {% if 13 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(13)" id="13">13</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 14 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(14)" id="14">14</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 15 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(15)" id="15">15</div>
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 16 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(16)" id="16">16</div>
+    <div class="table table-extra-large {% if seat_count|int > 13 %}toosmall{% endif %} {% if 13 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(13)" id="13">13</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 14 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(14)" id="14">14</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 15 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(15)" id="15">15</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 16 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(16)" id="16">16</div>
 
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 17 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(17)" id="17">17</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 18 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(18)" id="18">18</div>
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 19 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(19)" id="19">19</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 20 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(20)" id="20">20</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 17 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(17)" id="17">17</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 18 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(18)" id="18">18</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 19 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(19)" id="19">19</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 20 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(20)" id="20">20</div>
 
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 21 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(21)" id="21">21</div>
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 22 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(22)" id="22">22</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 23 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(23)" id="23">23</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 24 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(24)" id="24">24</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 21 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(21)" id="21">21</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 22 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(22)" id="22">22</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 23 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(23)" id="23">23</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 24 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(24)" id="24">24</div>
 
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 25 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(25)" id="25">25</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 26 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(26)" id="26">26</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 27 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(27)" id="27">27</div>
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 28 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(28)" id="28">28</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 25 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(25)" id="25">25</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 26 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(26)" id="26">26</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 27 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(27)" id="27">27</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 28 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(28)" id="28">28</div>
 
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 29 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(29)" id="29">29</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 30 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(30)" id="30">30</div>
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 31 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(31)" id="31">31</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 32 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(32)" id="32">32</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 29 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(29)" id="29">29</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 30 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(30)" id="30">30</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 31 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(31)" id="31">31</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 32 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(32)" id="32">32</div>
 
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 33 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(33)" id="33">33</div>
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 34 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(34)" id="34">34</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 35 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(35)" id="35">35</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 36 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(36)" id="36">36</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 33 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(33)" id="33">33</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 34 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(34)" id="34">34</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 35 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(35)" id="35">35</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 36 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(36)" id="36">36</div>
 
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 37 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(37)" id="37">37</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 38 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(38)" id="38">38</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 39 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(39)" id="39">39</div>
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 40 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(40)" id="40">40</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 37 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(37)" id="37">37</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 38 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(38)" id="38">38</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 39 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(39)" id="39">39</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 40 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(40)" id="40">40</div>
 
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 41 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(41)" id="41">41</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 42 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(42)" id="42">42</div>
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 43 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(43)" id="43">43</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 44 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(44)" id="44">44</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 41 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(41)" id="41">41</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 42 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(42)" id="42">42</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 43 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(43)" id="43">43</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 44 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(44)" id="44">44</div>
 
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 45 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(45)" id="45">45</div>
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 46 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(46)" id="46">46</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 47 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(47)" id="47">47</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 48 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(48)" id="48">48</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 45 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(45)" id="45">45</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 46 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(46)" id="46">46</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 47 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(47)" id="47">47</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 48 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(48)" id="48">48</div>
 
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 49 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(49)" id="49">49</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 50 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(50)" id="50">50</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 51 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(51)" id="51">51</div>
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 52 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(52)" id="52">52</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 49 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(49)" id="49">49</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 50 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(50)" id="50">50</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 51 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(51)" id="51">51</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 52 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(52)" id="52">52</div>
 
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 53 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(53)" id="53">53</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 54 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(54)" id="54">54</div>
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 55 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(55)" id="55">55</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 56 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(56)" id="56">56</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 53 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(53)" id="53">53</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 54 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(54)" id="54">54</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 55 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(55)" id="55">55</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 56 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(56)" id="56">56</div>
 
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 57 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(57)" id="57">57</div>
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 58 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(58)" id="58">58</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 59 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(59)" id="59">59</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 60 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(60)" id="60">60</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 61 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(61)" id="61">61</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 57 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(57)" id="57">57</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 58 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(58)" id="58">58</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 59 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(59)" id="59">59</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 60 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(60)" id="60">60</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 61 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(61)" id="61">61</div>
     
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 62 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(62)" id="62">62</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 63 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(63)" id="63">63</div>
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 64 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(64)" id="64">64</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 65 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(65)" id="65">65</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 66 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(66)" id="66">66</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 62 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(62)" id="62">62</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 63 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(63)" id="63">63</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 64 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(64)" id="64">64</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 65 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(65)" id="65">65</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 66 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(66)" id="66">66</div>
 
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 67 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(67)" id="67">67</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 68 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(68)" id="68">68</div>
-    <div class="table table-large {% if table_size|int > 6 %}toosmall{% endif %} {% if 69 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(69)" id="69">69</div>
-    <div class="table table-small {% if table_size|int > 2 %}toosmall{% endif %} {% if 70 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(70)" id="70">70</div>
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 71 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(71)" id="71">71</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 67 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(67)" id="67">67</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 68 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(68)" id="68">68</div>
+    <div class="table table-large {% if seat_count|int > 6 %}toosmall{% endif %} {% if 69 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(69)" id="69">69</div>
+    <div class="table table-small {% if seat_count|int > 2 %}toosmall{% endif %} {% if 70 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(70)" id="70">70</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 71 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(71)" id="71">71</div>
 
-    <div class="table table-regular {% if table_size|int > 4 %}toosmall{% endif %} {% if 72 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(72)" id="72">72</div>
+    <div class="table table-regular {% if seat_count|int > 4 %}toosmall{% endif %} {% if 72 in reserved_tables %}reserved{% endif %}" onclick="toggleTableInRes(72)" id="72">72</div>
 
     <div class="kitchen">Kitchen</div>
   </div>
 
+  <div class="bottom-pane">
+    <div class="reservation-summary">
+      <h3>Reservation Summary</h3>
+      <p><strong>Date:</strong> <span id="summary-date">{{ reservation_date }}</span></p>
+      <p><strong>Time:</strong> <span id="summary-time">{{ reservation_time }}</span></p>
+      <p><strong>Guests:</strong> <span id="summary-guests">{{ seat_count }}</span></p>
+    </div>
+    <div class="button-group">
+      <button class="back-btn" onclick="window.location.replace('/reservationInfo')">Go Back</button>
+      <button class="reserve-btn" onclick="submitReservation()">Submit Reservation</button>
+    </div>
+  </div>
+  <!--
   <div>
-    <button class="reserve-btn" onclick="openPanel()" id="finish-button">Select Date & Time</button>
+    <button class="reserve-btn" onclick="submitReservation()" id="finish-button">Submit Reservation</button>
     <p class="error-message" style="display: none;" id="error-message"></p>
   </div>
-
-  <div class="side-panel" id="sidePanel">
-    <button class="close-btn" onclick="closePanel()">✖</button>
-    <h3>Table Reservation</h3>
-    <p>Select your details to complete the reservation.</p>
-    <div class="reservation-form">
-      <!-- Number of Guests -->
-      <label for="guests" style="margin-top: 10px;">Number of Guests:</label>
-      <input type="number" id="guests" name="guests" min="1" max="20" placeholder="Enter number of guests" required>
-
-      <!-- Date Picker -->
-      <label for="reservation-date">{{ "New" if res_id }} Reservation Date:</label>
-      <input type="date" id="reservation-date" name="reservation-date" required>
-
-      <!-- Time Picker -->
-      <label for="reservation-time">{{ "New" if res_id }} Reservation Time:</label>
-      <input type="time" id="reservation-time" name="reservation-time" required>
-
-      <!-- Submit Button -->
-      <button type="button" class="reserve-btn" onclick=submitReservation()>{{ "Save Changes" if res_id else "Make Reservation" }}</button>
-  </div>
+  -->
 
   {% if res_id %}
     <script>
@@ -402,25 +393,33 @@
         errorMessage.innerHTML = message;
         errorMessage.style.display = "block";
     }
-    
-    function openPanel() {
-        if (selectedTables.length <= 0) {
-            showErrorMessage("You must select at least one table to reserve."); // Display error if no table(s) selected
-            return;
-        }
-        else {
-          fetch("/getSeatCount")
-              // TODO: DO THIS!!!!
-        }
-        document.getElementById("error-message").style.display = "none";
-        document.getElementById("sidePanel").classList.add("open");
-    }
-
-    function closePanel() {
-        document.getElementById("sidePanel").classList.remove("open");
-    }
 
     function submitReservation() {
+      if (selectedTables.length <= 0) {
+        showErrorMessage("You must select at least one table to reserve."); // Display error if no table(s) selected
+        return;
+      }
+      else {
+        const seatCountRequest = new XMLHttpRequest();
+        seatCountRequest.open("POST", "/getSeatCount", true);
+        seatCountRequest.setRequestHeader("Content-Type", "application/json");
+
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+            let seatCount = JSON.parse(seatCountRequest.responseText);
+            if (seatCount > 200) {
+              showErrorMessage(`A max of 200 seats may be reserved at a time (${seatCount} selected)`);
+              return;
+            }
+          } else {
+            alert("Couldn't find seat count for reservation.");
+            return;
+          }
+        };
+
+        seatCountRequest.send(JSON.stringify(selectedTables))
+      }
+
       let notProvided = "";
       const guests = document.getElementById("guests").value;
       if (!guests) {
@@ -449,7 +448,6 @@
         if (xhr.status === 200) {
           alert("Reservation successful!");
           window.location.replace("/home");
-          // closePanel();
         } else {
           alert(xhr.responseText);
         }
