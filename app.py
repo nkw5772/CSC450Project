@@ -320,7 +320,7 @@ def reservationInfo():
         
         reserved_tables_json = json.dumps(table_numbers)
         
-        return redirect(url_for('reservations',reserved_tables=reserved_tables_json, table_size=table_size, reservation_date=reservation_date, reservation_time=reservation_time,reservation_time_plus_60=reservation_time_plus_60))
+        return redirect(url_for('reservations',reserved_tables=reserved_tables_json, table_size=table_size, reservation_date=reservation_date, reservation_time=reservation_time))
     
     return render_template('reservationInfo.html')
 
