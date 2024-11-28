@@ -404,7 +404,7 @@
         seatCountRequest.open("POST", "/getSeatCount", true);
         seatCountRequest.setRequestHeader("Content-Type", "application/json");
 
-        xhr.onload = function () {
+        seatCountRequest.onload = function () {
           if (xhr.status === 200) {
             let seatCount = JSON.parse(seatCountRequest.responseText);
             if (seatCount > 200) {
