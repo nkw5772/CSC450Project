@@ -490,6 +490,7 @@ def ratelimit_error(e):
     return render_template('login.html', error_message='Too many login attempts. Please try again later.'), 429
 
 if __name__ == '__main__':
-    # check_stuff()
+    if os.environ.get('WERKZEUG_RUN_MAIN') is None: # Flask debug mode makes check_stuff() run twice and this prevents that
+        check_stuff()
     # threading.Thread(target=refresh_app, daemon=True).start()
     app.run(debug=True) # Ok so setting debug=True gives a random Windows error that idk how to suppress, BUT it doesn't make the error when debug=False
