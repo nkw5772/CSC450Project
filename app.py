@@ -411,6 +411,7 @@ def reservationInfo():
                 table_numbers.append(i[0])
         
         reserved_tables_json = json.dumps(table_numbers)
+        
         session['reservation_chosen'] = 'reservation_status'
         return redirect(url_for('reservations',reserved_tables=reserved_tables_json, seat_count=seat_count, reservation_date=reservation_date, reservation_time=reservation_time))
     
