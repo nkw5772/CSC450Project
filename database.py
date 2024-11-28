@@ -115,7 +115,7 @@ class Database:
     ###
     def check_in_search(self, last_name: str) -> list | None:
         command = """
-        SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.TableID, r.ResID 
+        SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.ResID 
         FROM Account a, Reservation r 
         WHERE r.ResOwner = a.AccountID AND LOWER(a.AccountLN) = ?
         """
@@ -128,7 +128,7 @@ class Database:
     
     def get_user_reservations(self, email: str) -> list | None:
         command = """
-        SELECT r.ResDate, r.ResTime, r.ResNoGuests, r.TableID, r.ResID
+        SELECT r.ResDate, r.ResTime, r.ResNoGuests, r.ResID
         FROM Account a, Reservation r 
         WHERE r.ResOwner = a.AccountID
         AND a.AccountEmail = ?
@@ -436,42 +436,19 @@ class Database:
     
     def removeItem(self, InventoryID):
         query = """
-        DELETE FROM INVENTORY
-        WHERE InventoryID = ?;
+        UPDATE Inventory
+        SET Quantity = Quantity - 1
+        WHERE InventoryID = ? 
+        AND Quantity > 0;
         """
         self.cursor.execute(query, (InventoryID,))
         self.database.commit()
-    '''
-    def checkInventory(self, item, size, expiration_date) -> bool:
-        query = """
-        SELECT *
-        FROM Inventory
-        WHERE FoodType = ?
-        AND ExpirationDate = ?
-        """
-        self.cursor.execute(query, (item, size, expiration_date))
-        if self.cursor.fetchall():
-            return True
-        return False
-    '''
-    '''
-    def getQuantity(self, item, size, expiration_date) -> int:
-        query = """
-        SELECT Amount
-        FROM Inventory
-        WHERE FoodType = ?
-        AND ExpirationDate = ?
-        """
-        self.cursor.execute(query, (item, size, expiration_date))
-        quantity = self.cursor.fetchall()[0][0]
-        return quantity
-    '''
     ###
     #endregion INVENTORY
     ###
 
     ###
-    #region MISC
+    #region NOTIFICATIONS
     ###
     def send_email(self, recipient_address, subject, body):
         # Gmail SMTP server setup
@@ -531,8 +508,44 @@ class Database:
         if len(results) <= 0:
             return None
         return results
+
+    def check_low_stock_and_notify(self, account_id):
+        # Get items with low stock
+        low_stock_query = """
+        SELECT InventoryID, FoodType
+        FROM Inventory
+        WHERE Quantity <= 2
+        """
+        self.cursor.execute(low_stock_query)
+        low_stock_items = self.cursor.fetchall()
+
+        if low_stock_items:
+            for item in low_stock_items:
+                inventory_id, food_type = item
+                message = f"Low stock alert: {food_type} (ID {inventory_id}) is running low."
+                # Add a notification for the employee
+                self.add_notification(account_id, message)
+
+    def notify_expired_items(self, account_id):
+        # Query for expired items
+        expired_items_query = """
+        SELECT InventoryID, FoodType, ExpirationDate
+        FROM Inventory
+        WHERE DATE(ExpirationDate) <= DATE('now')
+        """
+        self.cursor.execute(expired_items_query)
+        expired_items = self.cursor.fetchall()
+
+        if expired_items:
+            for item in expired_items:
+                inventory_id, food_type, expiration_date = item
+                message = f"Expired item alert: {food_type} (ID {inventory_id}) expired on {expiration_date}."
+                # Add a notification for the employee
+                self.add_notification(account_id, message)
+
+
     ###
-    #endregion MISC
+    #endregion NOTIFICATIONS
     ###
 
     ###

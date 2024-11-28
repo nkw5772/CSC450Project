@@ -199,16 +199,70 @@ def submitorder():
         inventoryStatus = "Ordered"
 
         db = Database()
-
         db.order_meat(foodType, quantity, size, purchaseDate, purchaseTime, expirationDate, expirationTime, inventoryStatus)
-
-
 
         return render_template('ordering.html')
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/inventory', methods=['GET', 'POST'])
+def inventory():
+    session.pop('reservation_chosen', None)
+
+    db = Database()
+    inventory = db.getInventory()
+
+    if request.method == 'POST':  # If removing an item
+        inventoryID = request.form.get('inventory_id')
+        db.removeItem(inventoryID)
+        inventory = db.getInventory()
+
+        # Trigger low stock check
+        account_id = db.get_id_from_email(session['email'])
+        db.check_low_stock_and_notify(account_id)
+
+    # Notify about expired items
+    if 'email' in session and session.get('account_type') == 'employee':
+        account_id = db.get_id_from_email(session['email'])
+        db.notify_expired_items(account_id)
+
+    return render_template('inventory.html', inventory=inventory)
+
+
 ###
 #endregion INVENTORY
+###
+
+###
+#region NOTIFICATIONS
+###
+@app.route('/remove_notification', methods=['POST'])
+def remove_notification():
+    if 'email' not in session:
+        return redirect(url_for('login'))
+
+    notification_id = request.form.get('notification_id')
+
+    if notification_id:
+        db = Database()
+        db.remove_notification(notification_id)
+
+    # Redirect back to the home page to show updated notifications
+    return redirect(url_for('home'))
+
+@app.route('/check_low_stock', methods=['POST'])
+def check_low_stock():
+    if 'email' not in session or session.get('account_type') != 'employee':
+        return jsonify({'error': 'Unauthorized access'}), 403
+
+    db = Database()
+    account_id = db.get_id_from_email(session['email'])
+    db.check_low_stock_and_notify(account_id)
+    
+    return jsonify({'message': 'Low stock notifications updated'}), 200
+
+###
+#endregion NOTIFICATIONS
 ###
 
 ###
@@ -390,19 +444,6 @@ def my_reservations():
 
     return render_template('myReservations.html', name = name, reservations = reservations)
 
-@app.route('/inventory', methods=['GET', 'POST'])
-def inventory():
-    session.pop('reservation_chosen', None)
-
-    db = Database()
-    inventory = db.getInventory()
-
-    if request.method == 'POST': # If removing an item
-        inventoryID = request.form.get('inventory_id')
-        db.removeItem(inventoryID)
-        inventory = db.getInventory()
-
-    return render_template('inventory.html', inventory = inventory)
 ###
 #endregion RESERVATIONS
 ###

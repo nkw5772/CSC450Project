@@ -79,6 +79,25 @@
             a:hover {
                 background-color: #e65c00;
             }
+            
+            .closebtn {
+                margin-right: 15px;
+                color: rgb(0, 0, 0);
+                font-weight: bold;
+                float: right;
+                font-size: 22px;
+                line-height: 20px;
+                cursor: pointer;
+                transition: 0.3s;
+                background: none; /* Remove button background */
+                border: none; /* Remove border */
+                outline: none; /* Remove focus outline */
+            }
+
+            .closebtn:hover {
+                color: black;
+            }
+
         </style>
     </head>
     <body>
@@ -105,6 +124,10 @@
                 <ul>
                 {% for id, message in user_notifs %}
                     <li>{{ message }}</li>
+                    <form action="/remove_notification" method="POST" style="display:inline;">
+                        <input type="hidden" name="notification_id" value="{{ id }}">
+                        <button type="submit" class="closebtn">&times;</button>
+                    </form>                    
                 {% endfor %}
                 </ul>
             {% endif %}
