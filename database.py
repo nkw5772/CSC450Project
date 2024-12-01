@@ -317,13 +317,13 @@ class Database:
         remind_threshold = (datetime.now() + timedelta(minutes=30)).strftime('%H:%M"%S')
         self.cursor.execute(command, (today, remind_threshold))
 
-        for row in self.cursor.fetchall():
+        for name, res_time, email in self.cursor.fetchall():
             subject = 'Your reservation is almost here!'
-            body = f"""Hello {row[1]}!
-                       Your reservation at {row[2]} is almost here.
+            body = f"""Hello {name}!
+                       Your reservation at {res_time} is almost here.
                        Don't miss your reservation!!!
                 """
-            self.send_email(row[0], subject, body)
+            self.send_email(email, subject, body)
     
     def get_table_ids(self, resID):
         query = """
@@ -390,10 +390,9 @@ class Database:
     def handle_no_shows(self) -> None:
         command = """
         SELECT a.AccountEmail, r.ResID FROM Account a, Reservation r             
-        WHERE a.AccountID = r.ResID
+        WHERE a.AccountID = r.ResOwner
         AND r.ResStatus = "ready"
-        AND r.ResDate < ?
-        OR (r.ResDate = ? AND r.ResTime < ?)
+        AND (r.ResDate < ? OR (r.ResDate = ? AND r.ResTime < ?))
         """
         today = datetime.today().strftime('%Y-%m-%d')
         noshow_threshold = (datetime.now() - timedelta(minutes=30)).strftime('%H:%M:%S')
@@ -401,6 +400,7 @@ class Database:
         self.cursor.execute(command, params)
         
         for email, id in self.cursor.fetchall():
+            print(email, id)
             self.send_email(email, 'Reservation No-Show', 'Hello!\nYou recently missed a reservation, and it has been noted.')
             self.update_res_status(id, "no_show")
             self.unreserve_table(id)

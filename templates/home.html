@@ -105,33 +105,51 @@
             <div class="brand">CSC450Project</div>
             <div>
                 <a href="/home">Home</a>                
-                {% if session.get('email') %}
-                    <a href="/myReservations">My Reservations</a>
-                    <a href="/ordering">Order</a>
-                    <a href="/inventory">Inventory</a>
-                    <a href="/logout">Logout</a>
-                {% else %}
-                    <a href="/login">Login</a>
-                {% endif %}                
+                <a href="/myReservations">My Reservations</a>
+                {% with account_type = session.get('account_type') %}
+                    {% if account_type == 'manager' %}
+                        <a href="/ordering">Order</a>
+                        <a href="/inventory">Inventory</a>
+                    {% elif account_type == 'employee' %}
+                        <a href="/inventory">Inventory</a>
+                    {% endif %}
+                {% endwith %}
+                <a href="/logout">Logout</a>            
             </div>
         </div>
         <div class="home-container">
             <h1>Welcome to Our Website!</h1>
             <p>Explore our features.</p>
-            <a href="/">Login</a>
-            <a href="/reservationInfo">Reserve</a>
-            {% if user_notifs %}
-                <ul>
+            {% with account_type = session.get('account_type') %}
+                {% if account_type == 'manager' %}
+                    <a href="/ordering">Order Products</a>
+                    <a href="/inventory">Inventory</a>
+                {% elif account_type == 'employee' %}
+                    <a href="/checkInReservation">Check In</a>
+                    <a href="/inventory">Inventory</a>
+                {% else %}
+                    <a href="/reservationInfo">Make Reservation</a>
+                    <a href="/myReservations">My Reservations</a>
+                {% endif %}
+            {% endwith %}
+            <ul>
+            {% if user_notifs %} 
                 {% for id, message in user_notifs %}
                     <li>{{ message }}</li>
                     <form action="/remove_notification" method="POST" style="display:inline;">
                         <input type="hidden" name="notification_id" value="{{ id }}">
                         <button type="submit" class="closebtn">&times;</button>
                     </form>                    
-                {% endfor %}
-                </ul>
+                {% endfor %}                
             {% endif %}
-
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            </ul>
             {{ disable_script|safe }}
         </div>
     </body>

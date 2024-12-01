@@ -179,8 +179,8 @@ def home():
 @app.route("/ordering", methods=['GET', 'POST'])
 def ordering():
     session.pop('reservation_chosen', None)
-
-    # Need to make it so only employees can get here
+    if session.get('account_type') != 'manager':
+        return redirect(url_for('home'))
     return render_template('ordering.html')
 
 @app.route('/submitorder', methods=['POST'])
@@ -483,7 +483,7 @@ def check_stuff():
 
     db = Database()
     db.remind_reservations()
-    # db.handle_no_shows()
+    db.handle_no_shows()
 
 @app.errorhandler(429)
 def ratelimit_error(e):

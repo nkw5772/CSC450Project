@@ -206,7 +206,7 @@
         {% endwith %}
         <div class="form-container">
             <h2>Make a Reservation</h2>
-            <form action="/reservationInfo" method="POST">
+            <form id="main-form" action="/reservationInfo" method="POST">
                 <div class="form-group">
                     <label for="seat-count">Number of Seats</label>
                     <input type="number" id="seat-count" name="seat_count" min="1" max="30" required>
@@ -243,20 +243,22 @@
                 errorTab.style.display = 'none';
             }
         }
-        function validateTimeEnding() {
-            const reservationTime = document.getElementById('reservation-time').value;
+
+        // Ran before submission
+        document.getElementById("main-form").onsubmit = function(event) {
+            const reservationTime = document.getElementById("reservation-time");
             const minutes = reservationTime.substring(3, 5);
-        
+            
             // Check if the input time ends in "00" or "30"
             if (minutes !== "00" && minutes !== "30") {
                 document.getElementById('error_message').textContent = 'Reservation time must end in :00 or :30.';
                 return false;  // Prevent form submission
             }
-            
-            // If the time is valid, clear any previous error messages
-            document.getElementById('error_message').textContent = '';
+
+            document.getElementById('error_message').textContent = ''; // If the time is valid, clear any previous error messages
+            reservationTime.value += ":00"; // Add seconds value for reservations in database
             return true;  // Allow form submission
-        }
+        };
     </script>
 </body>
 </html>
