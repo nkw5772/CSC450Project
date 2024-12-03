@@ -11,6 +11,7 @@
       margin: 0;
       padding: 0;
     }
+
     .navbar {
       display: flex;
       justify-content: space-between;
@@ -35,14 +36,11 @@
     .navbar a:hover {
       color: #ff6600;
     }
-  
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background-color: #f4f4f9;
-      min-height: 100vh; /* Ensures the body takes the full viewport height */
+
+    header nav a {
+      color: #fff;
+      margin: 0 10px;
+      text-decoration: none;
     }
   
     header {
@@ -59,10 +57,13 @@
       font-size: 24px;
     }
   
-    header nav a {
-      color: #fff;
-      margin: 0 10px;
-      text-decoration: none;
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f4f4f9;
+      min-height: 100vh; /* Ensures the body takes the full viewport height */
     }
   
     .main-content {
@@ -235,7 +236,7 @@
         <a href="/login">Login</a>
       {% endif %}                
     </div>
-</div>
+  </div>
   {% if reserved_tables %}
     <h1>{{reserved_tables}}</h1>
   {% endif %}
@@ -405,7 +406,7 @@
         seatCountRequest.setRequestHeader("Content-Type", "application/json");
 
         seatCountRequest.onload = function () {
-          if (xhr.status === 200) {
+          if (seatCountRequest.status === 200) {
             let seatCount = JSON.parse(seatCountRequest.responseText);
             if (seatCount > 200) {
               showErrorMessage(`A max of 200 seats may be reserved at a time (${seatCount} selected)`);
@@ -421,15 +422,15 @@
       }
 
       let notProvided = "";
-      const guests = document.getElementById("guests").value;
+      const guests = document.getElementById("summary-guests").value;
       if (!guests) {
         notProvided += `${(notProvided ? ", " : "")}Guests`; // Technically don't need the conditional expression here but keeping it to look the same
       }
-      const reservationDate = document.getElementById("reservation-date").value;
+      const reservationDate = document.getElementById("summary-date").value;
       if (!reservationDate) {
         notProvided += `${(notProvided ? ", " : "")}Reservation Date`;
       }
-      const reservationTime = document.getElementById("reservation-time").value;
+      const reservationTime = document.getElementById("summary-time").value;
       if (!reservationTime) {
         notProvided += `${(notProvided ? ", " : "")}Reservation Time`;
       }

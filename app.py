@@ -283,7 +283,9 @@ def reservations():
         return redirect(url_for('reservationInfo'))
     reserved_tables_json = request.args.get('reserved_tables')
     seat_count = request.args.get('seat_count')
+    reservation_date = request.args.get('reservation_date')
     reservation_time = request.args.get('reservation_time')
+    print(reservation_time)
     reservation_time_plus_60 = request.args.get('reservation_time_plus_60')
     if reserved_tables_json:
         # Convert the JSON string back to a Python list
@@ -296,7 +298,7 @@ def reservations():
     db = Database()
     wait_time = db.calculate_wait_time()
     # print(f"wait time, debugging porpoises: {wait_time}")
-    return render_template('reservation.html', wait_time=wait_time, reserved_tables=reserved_tables, seat_count=seat_count, reservation_time=reservation_time, reservation_time_plus_60=reservation_time_plus_60)
+    return render_template('reservation.html', wait_time=wait_time, reserved_tables=reserved_tables, seat_count=seat_count, reservation_date=reservation_date, reservation_time=reservation_time, reservation_time_plus_60=reservation_time_plus_60)
     
 @app.route('/reserve', methods=['POST'])
 def reserve_table():
@@ -394,7 +396,7 @@ def reservationInfo():
         # db = Database()
         # something = db.filter_reservations(reservation_time, reservation_date)
         # print(something)
-        minutes = reservation_time[3:5]
+        # minutes = reservation_time[3:5]
         # if minutes != "00" and minutes != "30":
         #     some_error = "Reservation time must end in :00 or :30"
         #     return render_template('reservationInfo.html', some_error=some_error)

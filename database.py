@@ -114,17 +114,48 @@ class Database:
     #region  RESERVATIONS
     ###
     def check_in_search(self, last_name: str) -> list | None:
-        command = """
-        SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.ResID 
-        FROM Account a, Reservation r 
-        WHERE r.ResOwner = a.AccountID AND LOWER(a.AccountLN) = ?
-        """
-        params = (last_name.lower(),)
-        self.cursor.execute(command, params)
-        results = self.cursor.fetchall()
-        if len(results) <= 0:
+        try:
+            # Query to find reservations and account details
+            command = """
+            SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.ResID
+            FROM Account a, Reservation r
+            WHERE r.ResOwner = a.AccountID AND LOWER(a.AccountLN) = ?
+            """
+            params = (last_name.lower(),)
+            self.cursor.execute(command, params)
+            reservations = self.cursor.fetchall()
+
+            if not reservations:
+                print(f"No reservations found for last name: {last_name}")
+                return None
+
+            # Add TableIDs for each reservation
+            results = []
+            for reservation in reservations:
+                account_fn, account_ln, no_guests, res_id = reservation
+
+                # Query to get the TableIDs for the current reservation
+                table_query = "SELECT TableID FROM ReservedSeats WHERE ResID = ?"
+                self.cursor.execute(table_query, (res_id,))
+                table_ids = [row[0] for row in self.cursor.fetchall()]  # Flatten list of tuples
+
+                # Append full details to the results
+                results.append((
+                    account_fn,
+                    account_ln,
+                    no_guests,
+                    res_id,
+                    table_ids,
+                ))
+
+            return results
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
             return None
-        return results
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return None
+
     
     def get_user_reservations(self, email: str) -> list | None:
         command = """
@@ -152,7 +183,7 @@ class Database:
             update_seating = """
             UPDATE Seating
             SET CurrentReservation = ?
-            WHERE TableID = (SELECT TableID FROM Reservation WHERE ResID = ?);
+            WHERE TableID IN (SELECT TableID FROM ReservedSeats WHERE ResID = ?);
             """
             self.cursor.execute(update_seating, (reservation_id, reservation_id))
             print("Updated Seating table for TableID linked to ResID:", reservation_id)
@@ -293,7 +324,7 @@ class Database:
         FROM Seating
         WHERE TableID IN ({', '.join(['?'] * len(tables))})
         """
-        params = tuple(list)
+        params = tuple(tables)
         self.cursor.execute(command, params)
         return self.cursor.fetchone()[0] # User should never be able to call this without selecting >= 1 tables
     ###
@@ -325,22 +356,7 @@ class Database:
                 """
             self.send_email(email, subject, body)
     
-    def get_table_ids(self, resID):
-        query = """
-        SELECT TableID FROM ReservedSeats WHERE ResID = ?
-        """
-        try:
-            # Execute the query with the provided parameters
-            self.cursor.execute(query, (resID,))
-            # Fetch all matching rows as a list of tuples
-            tableID = self.cursor.fetchone()
-            return tableID
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
-            return []
-        except Exception as e:
-            print(f"Unexpected error: {e}")
-            return []
+   
     def filter_reservations(self, res_date):
         # query = """
         # SELECT * FROM Reservation

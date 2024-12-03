@@ -95,6 +95,30 @@
             transition: background-color 0.3s;
             margin-top: 10px;
         }
+
+        #reservationInfo {
+            text-align: center;
+            margin-top: 10px;
+            padding: 12px;
+        }
+
+        #reservationInfoButton {
+            width: 100%;
+            padding: 12px;
+            background-color: #ff6600; 
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            
+            text-decoration: none;
+        }
+        #reservationInfoButton:hover {
+            background-color: #e65c00; 
+        }
     
         button:hover {
             background-color: #e65c00; 
@@ -228,6 +252,9 @@
                 {% endfor %}
             </tbody>
         </table>
+        <div id="reservationInfo">
+            <a href="/reservationInfo" id="reservationInfoButton">Make A Reservation</a>     
+        </div>
         {% else %}
         <h4>No upcoming reservations. Schedule one!</h4>
         {% endif %}

@@ -225,9 +225,7 @@
             background-color: #e65c00;
             transform: scale(1.05);
         }
-    </style>
-    
-    
+    </style>  
 </head>
 <body>
     <div class="navbar">
@@ -286,10 +284,10 @@
                         <td>{{ row[0] }}</td>
                         <td>{{ row[1] }}</td>
                         <td>{{ row[2] }}</td>
-                        <td>{{ row[3] }}</td>
+                        <td>{{ row[4] }}</td>
                         <td>
                             <form action="/confirmCheckIn" method="POST" style="display:inline;">
-                                <input type="hidden" name="reservation_id" value="{{ row[4] }}">
+                                <input type="hidden" name="reservation_id" value="{{ row[3] }}">
                                 <button type="submit">✔</button>
                             </form>
                         </td>
