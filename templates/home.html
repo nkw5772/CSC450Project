@@ -216,6 +216,45 @@
                 background-color: #e65c00;
                 transform: scale(1.05);
             }
+            /* Side Panel Styling */
+            .notification-panel {
+                position: fixed;
+                top: 58px;
+                right: 0;
+                width: 300px;
+                height: calc(100% - 58px);
+                background-color: #ffffff;
+                box-shadow: -4px 0 8px rgba(0, 0, 0, 0.1);
+                display: none; /* Hidden by default */
+                overflow-y: auto;
+                z-index: 1000;
+            }
+
+            .notification {
+                margin: 10px;
+                padding: 20px;
+                border-radius: 8px;
+                background-color: #f9f9f9;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                font-size: 14px;
+                color: #333;
+                position: relative;
+            }
+
+            .notification .closebtn {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                color: #333;
+                font-size: 16px;
+                cursor: pointer;
+                background: none;
+                border: none;
+            }
+
+            .notification .closebtn:hover {
+                color: red;
+            }
         </style>
     </head>
     <body>
@@ -253,15 +292,6 @@
                 {% endif %}
             {% endwith %}
             <ul>
-            {% if user_notifs %} 
-                {% for id, message in user_notifs %}
-                    <li>{{ message }}</li>
-                    <form action="/remove_notification" method="POST" style="display:inline;">
-                        <input type="hidden" name="notification_id" value="{{ id }}">
-                        <button type="submit" class="closebtn">&times;</button>
-                    </form>                    
-                {% endfor %}                
-            {% endif %}
             {% with messages = get_flashed_messages() %}
                 {% if messages %}
                     {% for message in messages %}
@@ -270,7 +300,30 @@
                 {% endif %}
             {% endwith %}
             </ul>
+            <div id="notification-panel" class="notification-panel">
+                {% if user_notifs %}
+                    {% for id, message in user_notifs %}
+                        <div class="notification">
+                            {{ message }}
+                            <form action="/remove_notification" method="POST" style="display:inline;">
+                                <input type="hidden" name="notification_id" value="{{ id }}">
+                                <button type="submit" class="closebtn">&times;</button>
+                            </form>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
             {{ disable_script|safe }}
         </div>
+        <script>
+            // Show the notification panel if there are notifications
+            document.addEventListener("DOMContentLoaded", function() {
+                const userNotifs = parseInt("{{ user_notifs|length }}");
+                const notificationPanel = document.getElementById("notification-panel");
+                if (userNotifs > 0) {
+                    notificationPanel.style.display = "block";
+                }
+            });
+        </script>
     </body>
 </html>

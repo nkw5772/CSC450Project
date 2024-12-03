@@ -303,7 +303,7 @@ def reservations():
 @app.route('/reserve', methods=['POST'])
 def reserve_table():
     try:
-        data = request.get_json(silent=True, cache=True)
+        data = request.get_json(silent=True)
         if not data:
             return redirect(url_for('/reservation'))
         
