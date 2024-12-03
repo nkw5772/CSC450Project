@@ -344,7 +344,7 @@ def reserve_table():
 @app.route("/checkInReservation", methods=['GET', 'POST'])
 def checkIn():
     print(session.get('account_type'))
-    if 'email' not in session or session.get('account_type')!= 'employee':
+    if 'email' not in session or session.get('account_type')not in ['employee', 'manager']:
         flash('Sorry, you do not have permission to view that page.')
         return redirect(url_for('home'))
     if request.method == 'POST':

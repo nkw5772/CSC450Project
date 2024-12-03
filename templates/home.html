@@ -239,12 +239,14 @@
             <p>Explore our features.</p>
             {% with account_type = session.get('account_type') %}
                 {% if account_type == 'manager' %}
-                    <a href="/ordering">Order Products</a>
-                    <a href="/inventory">Inventory</a>
+                    <a class="tableButton" href="/ordering">Order Products</a>
+                    <a class="tableButton" href="/inventory">Inventory</a>
+                    <a class="tableButton" href="/reservation">Make Reservation</a>
+                    <a class="tableButton" href="/checkInReservation">Check In</a>
                 {% elif account_type == 'employee' %}
                     <a class="tableButton" href="/checkInReservation">Check In</a>
                     <a class="tableButton" href="/inventory">Inventory</a>
-                    <a class="tableButton" href="/reservation">Reservation</a>
+                    <a class="tableButton" href="/reservation">Make Reservation</a>
                 {% else %}
                     <a href="/reservationInfo">Make Reservation</a>
                     <a href="/myReservations">My Reservations</a>
