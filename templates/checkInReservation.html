@@ -190,7 +190,7 @@
             padding: 40px;
             border-radius: 12px;
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-            width: 500px;
+            width: 600px;
             max-width: 90%;
             margin-top: 20px;
         }
@@ -207,7 +207,7 @@
             background-color: #f2f2f2;
             color: #1181f5;
             font-weight: bold;
-            text-align: left;
+            text-align: center;
         }
     
         .table-container button {
@@ -275,6 +275,7 @@
                     <th>Last Name</th>
                     <th>Number of Guests</th>
                     <th>Table ID</th>
+                    <th>Status</th>
                     <th>Check In</th>
                 </tr>
             </thead>
@@ -284,10 +285,11 @@
                         <td>{{ row[0] }}</td>
                         <td>{{ row[1] }}</td>
                         <td>{{ row[2] }}</td>
+                        <td>{{ row[3] | join(', ') }}</td>
                         <td>{{ row[4] }}</td>
                         <td>
                             <form action="/confirmCheckIn" method="POST" style="display:inline;">
-                                <input type="hidden" name="reservation_id" value="{{ row[3] }}">
+                                <input type="hidden" name="reservation_id" value="{{ row[5] }}">
                                 <button type="submit">✔</button>
                             </form>
                         </td>

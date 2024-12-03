@@ -190,6 +190,9 @@
             let quant = document.getElementById("quantity").value;
             let size = document.getElementById("size").value;
             if (quant && size) {  // Check that both quantity and size are selected
+                if (quant <= 0 || size <= 0) {
+                    return;
+                }
                 let result = quant * size * 1.62;
                 document.getElementById("result").value = "$" + result.toFixed(2);  // Display the result rounded to 2 decimal places
             }

@@ -117,9 +117,11 @@ class Database:
         try:
             # Query to find reservations and account details
             command = """
-            SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.ResID
+            SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.ResStatus, r.ResID
             FROM Account a, Reservation r
-            WHERE r.ResOwner = a.AccountID AND LOWER(a.AccountLN) = ?
+            WHERE r.ResOwner = a.AccountID
+            AND LOWER(a.AccountLN) = ?
+            AND r.ResStatus IN ("scheduled", "ready")
             """
             params = (last_name.lower(),)
             self.cursor.execute(command, params)
@@ -132,7 +134,7 @@ class Database:
             # Add TableIDs for each reservation
             results = []
             for reservation in reservations:
-                account_fn, account_ln, no_guests, res_id = reservation
+                account_fn, account_ln, no_guests, res_status, res_id = reservation
 
                 # Query to get the TableIDs for the current reservation
                 table_query = "SELECT TableID FROM ReservedSeats WHERE ResID = ?"
@@ -144,8 +146,9 @@ class Database:
                     account_fn,
                     account_ln,
                     no_guests,
-                    res_id,
                     table_ids,
+                    res_status.capitalize(),
+                    res_id,
                 ))
 
             return results
@@ -168,9 +171,28 @@ class Database:
         """
         params = (email,)
         self.cursor.execute(command, params)
-        results = self.cursor.fetchall()
-        if len(results) <= 0:
+        reservations = self.cursor.fetchall()
+        if len(reservations) <= 0:
             return None
+        
+        results = []
+        for reservation in reservations:
+            res_date, res_time, no_guests, res_id = reservation
+
+            # Query to get the TableIDs for the current reservation
+            table_query = "SELECT TableID FROM ReservedSeats WHERE ResID = ?"
+            self.cursor.execute(table_query, (res_id,))
+            table_ids = [row[0] for row in self.cursor.fetchall()]  # Flatten list of tuples
+
+            # Append full details to the results
+            results.append((
+                res_date,
+                res_time,
+                no_guests,
+                res_id,
+                table_ids,
+            ))
+
         return results
 
 
