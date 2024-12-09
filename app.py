@@ -5,9 +5,11 @@ from database import Database
 from datetime import datetime, timedelta
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from validate_email import validate_email
 import time
 import threading
 import os
+import re
 import json
 
 ###
@@ -31,17 +33,8 @@ disable_login_limit = False # Toggles whether login attempt rate is limited (ena
 ###
 #region USER AUTHENTICATION
 ###
-# Define the route for the login page
-# This page is the root page of the application
-# This will eventually query the database and check the credentials.
-
-
-    
-
-
-
+# TODO: Server-side checks for this
 @app.route('/', methods=['GET', 'POST'])
-# @limiter.limit("5 per minute")
 def login():
     session.pop('reservation_chosen', None)
     if 'email' in session:
@@ -113,31 +106,61 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+def validate_input(input, correct_type: type, min_length: int = 0, max_length: int = 0):
+    if not input: # Check for null
+        return False
+    elif not isinstance(input, correct_type): # Check for right data type
+        return False
+    # Check for length constraints
+    elif min_length > 0 and len(input) < min_length:
+        return False
+    elif max_length > 0 and len(input) > max_length:
+        return False
+    return True
+
 @app.route("/createAccount", methods=['GET', 'POST'])
 def createAccount():
     if request.method == 'POST':
         db = Database()
-        
-        first_name = request.form.get('first_name') # Should we hash this info as well?
-        last_name = request.form.get('last_name')
-        email = request.form.get('email')
-        phone_number = request.form.get('phone')
-        password_hash = sha256(request.form.get('password').encode('utf-8')).hexdigest()
-        confirm_password_hash = sha256(request.form.get('confirm_password').encode('utf-8')).hexdigest()
 
         error_messages = []
 
-        if not db.email_is_unique(email):
+        # Get submitted info
+        first_name = request.form.get('first_name')
+        last_name = request.form.get('last_name')
+        email = request.form.get('email')
+        phone_number = request.form.get('phone')
+        password = request.form.get('password') 
+        confirm_password = request.form.get('confirm_password') 
+
+        # Validate info
+        if not validate_input(first_name, str, 2, 50):
+            error_messages.append('First name must be between 2 and 50 characters.')
+        
+        if not validate_input(last_name, str, 2, 50):
+            error_messages.append('Last name must be between 2 and 50 characters.')
+
+        if not (validate_input(email, str, 3, 100) and validate_email(email)):
+            error_messages.append('Email could not be validated - please use a different email.')
+        elif not db.email_is_unique(email):
             error_messages.append('Email is already in use - please use a different email.')
 
-        if not db.phone_is_unique(phone_number):
+        if not (validate_input(phone_number, str, 10, 18) and re.fullmatch(r"^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$", phone_number)): # Phone number regex: https://stackoverflow.com/a/16699507
+            error_messages.append('Phone number could not be validated - please use a different phone number.')
+        elif not db.phone_is_unique(phone_number):
             error_messages.append('Phone number is already in use - please use a different phone number.')
-
-        if password_hash != confirm_password_hash:
-            error_messages.append('Passwords do not match.')
         
+        if not (validate_input(password, str, 8) and validate_input(confirm_password, str, 8)):
+            error_messages.append('Passwords must be at least 8 characters.')
+        else:
+            password_hash = sha256(password.encode('utf-8')).hexdigest()
+            confirm_password_hash = sha256(confirm_password.encode('utf-8')).hexdigest()
+            if password_hash != confirm_password_hash:
+                error_messages.append('Passwords do not match.')
+        
+        # Return success or error
         if error_messages:
-            return render_template('createAccount.html', error_messages=error_messages)
+            return render_template('createAccount.html', error_messages=error_messages), 400
         else:
             today = datetime.today().strftime('%Y-%m-%d')
             db.add_account(first_name, last_name, 'customer', email, phone_number, today, password_hash)
@@ -154,8 +177,6 @@ def createAccount():
 @app.route("/home")
 def home():
     session.pop('reservation_chosen', None)
-    if 'email' not in session:
-        return redirect(url_for('login'))
     disable_script = """
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -183,6 +204,7 @@ def ordering():
         return redirect(url_for('home'))
     return render_template('ordering.html')
 
+# TODO: Server-side checks for this
 @app.route('/submitorder', methods=['POST'])
 def submitorder():
     try:
@@ -196,7 +218,7 @@ def submitorder():
         futureTime = datetime.now() + timedelta(weeks=2)
         expirationDate = futureTime.strftime("%Y-%m-%d")
         expirationTime = futureTime.strftime("%H:%M:%S")
-        inventoryStatus = "Ordered"
+        inventoryStatus = "ordered"
 
         db = Database()
         db.order_meat(foodType, quantity, size, purchaseDate, purchaseTime, expirationDate, expirationTime, inventoryStatus)
@@ -205,6 +227,7 @@ def submitorder():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# TODO: Server-side checks for this
 @app.route('/inventory', methods=['GET', 'POST'])
 def inventory():
     session.pop('reservation_chosen', None)
@@ -222,8 +245,8 @@ def inventory():
         db.check_low_stock_and_notify(account_id)
 
     # Notify about expired items
-    if 'email' in session and session.get('account_type') == 'employee':
-        account_id = db.get_id_from_email(session['email'])
+    if session.get('account_type') in ['employee', 'manager']:
+        account_id = db.get_id_from_email(session.get('email'))
         db.notify_expired_items(account_id)
 
     return render_template('inventory.html', inventory=inventory)
@@ -238,9 +261,6 @@ def inventory():
 ###
 @app.route('/remove_notification', methods=['POST'])
 def remove_notification():
-    if 'email' not in session:
-        return redirect(url_for('login'))
-
     notification_id = request.form.get('notification_id')
 
     if notification_id:
@@ -252,7 +272,7 @@ def remove_notification():
 
 @app.route('/check_low_stock', methods=['POST'])
 def check_low_stock():
-    if 'email' not in session or session.get('account_type') != 'employee':
+    if session.get('account_type') != 'employee':
         return jsonify({'error': 'Unauthorized access'}), 403
 
     db = Database()
@@ -274,10 +294,9 @@ def no_cache(response):
     response.headers['Expires'] = '0'
     return response
 
+# TODO: Server-side checks for this
 @app.route("/reservation", methods=['GET', 'POST'])
 def reservations():
-    if 'email' not in session:
-        return redirect(url_for('login'))
     if 'reservation_chosen' not in session:
         flash('You must select reservation info first.')
         return redirect(url_for('reservationInfo'))
@@ -299,7 +318,8 @@ def reservations():
     wait_time = db.calculate_wait_time()
     # print(f"wait time, debugging porpoises: {wait_time}")
     return render_template('reservation.html', wait_time=wait_time, reserved_tables=reserved_tables, seat_count=seat_count, reservation_date=reservation_date, reservation_time=reservation_time, reservation_time_plus_60=reservation_time_plus_60)
-    
+
+# TODO: Server-side checks for this
 @app.route('/reserve', methods=['POST'])
 def reserve_table():
     try:
@@ -313,14 +333,7 @@ def reserve_table():
         res_time = data.get('reservation_time')
         table_ids = data.get('table_ids')
         res_id = data.get('reservation_id', None)
-    
-        # guests = request.form.get('guests')
-        # res_date = request.form.get('reservation_date')
-        # res_time = request.form.get('reservation_time')
-        # table_id = request.form.get('table_id')
-        # res_id = request.form.get('reservation_id', default = None)
 
-        # Establish connection to the SQL Server
         db = Database()
         for table in table_ids:
             if db.check_reservation_conflict(table, res_date, res_time):
@@ -341,12 +354,13 @@ def reserve_table():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# TODO: Server-side checks for this
 @app.route("/checkInReservation", methods=['GET', 'POST'])
 def checkIn():
-    print(session.get('account_type'))
-    if 'email' not in session or session.get('account_type')not in ['employee', 'manager']:
+    if session.get('account_type') not in ['employee', 'manager']:
         flash('Sorry, you do not have permission to view that page.')
         return redirect(url_for('home'))
+    
     if request.method == 'POST':
         db = Database()
         last_name = request.form.get('last_name')
@@ -380,12 +394,10 @@ def confirmCheckIn():
         error = 'Failed to check in reservation.'
         return render_template('checkInReservation.html', resSearch=resSearch, error=error)
 
-
+# TODO: Server-side checks for this
 @app.route('/reservationInfo', methods=['GET', 'POST'])
 def reservationInfo():
     session.pop('reservation_chosen', None)
-    if 'email' not in session:
-        return redirect(url_for('login'))
     
     if request.method == 'POST':
         
@@ -418,7 +430,9 @@ def reservationInfo():
         return redirect(url_for('reservations',reserved_tables=reserved_tables_json, seat_count=seat_count, reservation_date=reservation_date, reservation_time=reservation_time))
     
     return render_template('reservationInfo.html')
-    
+
+# I looked up the route for this across all project files and this isn't referenced anywhere
+"""
 @app.route('/getSeatCount', methods=['POST'])
 def get_seat_count():
     tables = request.get_json()
@@ -426,7 +440,9 @@ def get_seat_count():
     db = Database()
 
     return jsonify(db.get_table_seat_count(tables))
+"""
 
+# TODO: Server-side checks for this
 @app.route('/myReservations', methods=['GET', 'POST'])
 def my_reservations():
     session.pop('reservation_chosen', None)
@@ -451,20 +467,11 @@ def my_reservations():
 #endregion RESERVATIONS
 ###
 
-"""
 # Triggered before every request (GET/POST) and checks if session account type matches database and flags if not
 @app.before_request
-def load_user():
-    email = session['email']
-    if email:
-        db = Database()
-        try:
-            session['account_type'] = db.get_account_type(email)
-        except:
-            return jsonify({"error": "Could not validate user account type. Please try again later."}), 418 # TODO: Find a better error code lmao
-    else:
-        session['account_type'] = 'customer'  # Default role if not logged in
-"""
+def verify_user():
+    if 'email' not in session and request.path != '/':
+        return redirect(url_for('login'))
 
 """
 def refresh_app():
