@@ -117,7 +117,7 @@ class Database:
         try:
             # Query to find reservations and account details
             command = """
-            SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.ResStatus, r.ResID, r.ResTime
+            SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.ResStatus, r.ResID, r.ResTime, r.ResDate
             FROM Account a, Reservation r
             WHERE r.ResOwner = a.AccountID
             AND LOWER(a.AccountLN) = ?
@@ -134,7 +134,7 @@ class Database:
             # Add TableIDs for each reservation
             results = []
             for reservation in reservations:
-                account_fn, account_ln, no_guests, res_status, res_id, res_time = reservation
+                account_fn, account_ln, no_guests, res_status, res_id, res_time, res_date = reservation
 
                 # Query to get the TableIDs for the current reservation
                 table_query = "SELECT TableID FROM ReservedSeats WHERE ResID = ?"
@@ -150,6 +150,7 @@ class Database:
                     res_status.capitalize(),
                     res_id,
                     res_time,
+                    res_date,
                 ))
 
             return results
