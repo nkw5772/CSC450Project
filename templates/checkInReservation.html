@@ -46,6 +46,7 @@
     
         .navbar a:hover {
             color: #ff6600;
+            text-decoration: none;
         }
     
         .brand {
@@ -276,6 +277,7 @@
                     <th>Number of Guests</th>
                     <th>Table ID</th>
                     <th>Status</th>
+                    <th>Time</th>
                     <th>Check In</th>
                 </tr>
             </thead>
@@ -287,6 +289,7 @@
                         <td>{{ row[2] }}</td>
                         <td>{{ row[3] | join(', ') }}</td>
                         <td>{{ row[4] }}</td>
+                        <td>{{ row[6] }} </td>
                         <td>
                             <form action="/confirmCheckIn" method="POST" style="display:inline;">
                                 <input type="hidden" name="reservation_id" value="{{ row[5] }}">

@@ -117,7 +117,7 @@ class Database:
         try:
             # Query to find reservations and account details
             command = """
-            SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.ResStatus, r.ResID
+            SELECT a.AccountFN, a.AccountLN, r.ResNoGuests, r.ResStatus, r.ResID, r.ResTime
             FROM Account a, Reservation r
             WHERE r.ResOwner = a.AccountID
             AND LOWER(a.AccountLN) = ?
@@ -134,7 +134,7 @@ class Database:
             # Add TableIDs for each reservation
             results = []
             for reservation in reservations:
-                account_fn, account_ln, no_guests, res_status, res_id = reservation
+                account_fn, account_ln, no_guests, res_status, res_id, res_time = reservation
 
                 # Query to get the TableIDs for the current reservation
                 table_query = "SELECT TableID FROM ReservedSeats WHERE ResID = ?"
@@ -149,6 +149,7 @@ class Database:
                     table_ids,
                     res_status.capitalize(),
                     res_id,
+                    res_time,
                 ))
 
             return results
@@ -241,6 +242,8 @@ class Database:
             return True
         
     def make_reservation(self, reservation_date, reservation_time, guests, TimeCreated, TimeUpdated, ResStatus, table_ids, ResOwner):
+        if self.is_past_reservation(reservation_date, reservation_time):
+            raise ValueError("Cannot reserve a past date or time.")
         reserve_command = """
         INSERT INTO Reservation (ResDate, ResTime, ResNoGuests, TimeCreated, TimeUpdated, ResStatus, ResOwner)
         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -259,6 +262,8 @@ class Database:
         self.database.commit()
 
     def modify_reservation(self, reservation_id, reservation_date, reservation_time, guests, time_created, time_updated, res_status, table_ids, res_owner):
+        if self.is_past_reservation(reservation_date, reservation_time):
+         raise ValueError("Cannot modify to a past date or time.")
         modify_command = """
         UPDATE Reservation SET 
         ResDate = ?,
@@ -325,6 +330,14 @@ class Database:
         params = (reservation_id,)
         self.cursor.execute(command, params)
         self.database.commit()
+
+    def is_past_reservation(self, reservation_date: str, reservation_time: str) -> bool:
+        try:
+            reservation_datetime = datetime.strptime(f"{reservation_date} {reservation_time}", "%Y-%m-%d %H:%M")
+            return reservation_datetime < datetime.now()
+        except ValueError as e:
+            print(f"Error parsing date or time: {e}")
+            return True
 
     def calculate_wait_time(self):
         query = """

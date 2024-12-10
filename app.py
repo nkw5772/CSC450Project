@@ -212,6 +212,8 @@ def submitorder():
         foodType = request.form.get('item')
         quantity = request.form.get('quantity')
         size = request.form.get('size')
+        if quantity <= 0:
+            raise ValueError("Quantity must be greater than 0.")
         currentTime = datetime.now()
         purchaseDate = currentTime.strftime("%Y-%m-%d")
         purchaseTime = currentTime.strftime("%H:%M:%S")
@@ -223,7 +225,9 @@ def submitorder():
         db = Database()
         db.order_meat(foodType, quantity, size, purchaseDate, purchaseTime, expirationDate, expirationTime, inventoryStatus)
 
-        return render_template('ordering.html')
+        return render_template('ordering.html', message="Order placed successfully!")
+    except ValueError as ve:
+        return render_template('ordering.html', error=str(ve))
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -335,6 +339,10 @@ def reserve_table():
         res_id = data.get('reservation_id', None)
 
         db = Database()
+
+        if db.is_past_reservation(res_date, res_time):
+            return jsonify({'error': 'Cannot reserve a time in the past.'}), 400
+        
         for table in table_ids:
             if db.check_reservation_conflict(table, res_date, res_time):
                 return jsonify({'error': 'This table is already reserved at the selected time. Please choose another time or table.'}), 409
@@ -400,47 +408,46 @@ def reservationInfo():
     session.pop('reservation_chosen', None)
     
     if request.method == 'POST':
-        
         seat_count = request.form.get('seat_count')
         reservation_date = request.form.get('reservation_date')
         reservation_time = request.form.get('reservation_time')
-        
-        # db = Database()
-        # something = db.filter_reservations(reservation_time, reservation_date)
-        # print(something)
-        # minutes = reservation_time[3:5]
-        # if minutes != "00" and minutes != "30":
-        #     some_error = "Reservation time must end in :00 or :30"
-        #     return render_template('reservationInfo.html', some_error=some_error)
-        table_numbers = []
+
         db = Database()
-        reserved_tables = db.filter_reservations(reservation_date)
-        for i in reserved_tables:
-            res_time_obj = datetime.strptime(i[1], "%H:%M")
+
+        try:
+            # Combine reservation date and time into a datetime object
+            reservation_datetime = datetime.strptime(f"{reservation_date} {reservation_time}", "%Y-%m-%d %H:%M")
+            
+            # Check if the reservation is in the past
+            if reservation_datetime < datetime.now():
+                error_message = "You cannot select a past date or time."
+                return render_template('reservationInfo.html', error_message=error_message)
+
+            # Check for reserved tables for the given date
+            table_numbers = []
+            reserved_tables = db.filter_reservations(reservation_date)
+            for i in reserved_tables:
+                res_time_obj = datetime.strptime(i[1], "%H:%M")
+
+                # Add 60 minutes to the reservation_time
+                res_time_plus_60_obj = res_time_obj + timedelta(minutes=60)
+                reservation_time_plus_60 = res_time_plus_60_obj.strftime("%H:%M")
+                if reservation_time >= i[1] and reservation_time < reservation_time_plus_60:
+                    table_numbers.append(i[0])
+
+            reserved_tables_json = json.dumps(table_numbers)
+            
+            # Store reservation status in session and redirect
+            session['reservation_chosen'] = 'reservation_status'
+            return redirect(url_for('reservations', reserved_tables=reserved_tables_json, seat_count=seat_count, reservation_date=reservation_date, reservation_time=reservation_time))
         
-            # Add 60 minutes to the reservation_time
-            res_time_plus_60_obj = res_time_obj + timedelta(minutes=60)
-            reservation_time_plus_60 = res_time_plus_60_obj.strftime("%H:%M")
-            if reservation_time >= i[1] and reservation_time < reservation_time_plus_60:
-                table_numbers.append(i[0])
-        
-        reserved_tables_json = json.dumps(table_numbers)
-        
-        session['reservation_chosen'] = 'reservation_status'
-        return redirect(url_for('reservations',reserved_tables=reserved_tables_json, seat_count=seat_count, reservation_date=reservation_date, reservation_time=reservation_time))
-    
+        except ValueError as e:
+            # Handle invalid date or time input
+            error_message = "Invalid date or time format."
+            return render_template('reservationInfo.html', error_message=error_message)
+
     return render_template('reservationInfo.html')
 
-# I looked up the route for this across all project files and this isn't referenced anywhere
-"""
-@app.route('/getSeatCount', methods=['POST'])
-def get_seat_count():
-    tables = request.get_json()
-
-    db = Database()
-
-    return jsonify(db.get_table_seat_count(tables))
-"""
 
 # TODO: Server-side checks for this
 @app.route('/myReservations', methods=['GET', 'POST'])
