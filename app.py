@@ -392,6 +392,8 @@ def reservationInfo():
         seat_count = request.form.get('seat_count')
         reservation_date = request.form.get('reservation_date')
         reservation_time = request.form.get('reservation_time')
+        accomodations = request.form.get('accomodations')
+        accomodations = 1 if accomodations else 0
         
         # db = Database()
         # something = db.filter_reservations(reservation_time, reservation_date)
@@ -415,7 +417,7 @@ def reservationInfo():
         reserved_tables_json = json.dumps(table_numbers)
         
         session['reservation_chosen'] = 'reservation_status'
-        return redirect(url_for('reservations',reserved_tables=reserved_tables_json, seat_count=seat_count, reservation_date=reservation_date, reservation_time=reservation_time))
+        return redirect(url_for('reservations',reserved_tables=reserved_tables_json, seat_count=seat_count, reservation_date=reservation_date, reservation_time=reservation_time, accomodations=accomodations))
     
     return render_template('reservationInfo.html')
     
@@ -430,7 +432,8 @@ def get_seat_count():
 @app.route('/myReservations', methods=['GET', 'POST'])
 def my_reservations():
     session.pop('reservation_chosen', None)
-
+    if 'email' not in session:
+        return redirect(url_for('login'))
     db = Database()
     
     name = db.get_name_from_email(session['email'])[0]
@@ -495,4 +498,4 @@ if __name__ == '__main__':
     if os.environ.get('WERKZEUG_RUN_MAIN') is None: # Flask debug mode makes check_stuff() run twice and this prevents that
         check_stuff()
     # threading.Thread(target=refresh_app, daemon=True).start()
-    app.run(debug=True) # Ok so setting debug=True gives a random Windows error that idk how to suppress, BUT it doesn't make the error when debug=False
+    app.run(debug=False) # Ok so setting debug=True gives a random Windows error that idk how to suppress, BUT it doesn't make the error when debug=False
