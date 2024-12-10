@@ -40,6 +40,7 @@
 
         .navbar a:hover {
             color: #ff6600;
+            text-decoration: none;
         }
 
         .form-container {
@@ -104,6 +105,44 @@
         button:hover {
             background-color: #e65c00; 
         }
+        .alert {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .closebtn {
+            margin-right: 15px;
+            color: rgb(0, 0, 0);
+            font-weight: bold;
+            float: right;
+            font-size: 22px;
+            line-height: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .closebtn:hover {
+            color: black;
+        }
 
         small {
             display: block;
@@ -143,6 +182,18 @@
             {% endif %}                
         </div>
     </div>
+        {% if message %}
+    <div class="alert alert-success">
+        <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>
+        {{ message }}
+    </div>
+    {% elif error %}
+    <div class="alert alert-danger">
+        <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>
+        {{ error }}
+    </div>
+    {% endif %}
+
     <div class="form-container">
         <form action="/submitorder" method="POST" class="form-grid">
             <div>

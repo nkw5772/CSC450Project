@@ -46,6 +46,7 @@
     
         .navbar a:hover {
             color: #ff6600;
+            text-decoration: none;
         }
     
         .brand {
@@ -190,7 +191,7 @@
             padding: 40px;
             border-radius: 12px;
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-            width: 600px;
+            width: 730px;
             max-width: 90%;
             margin-top: 20px;
         }
@@ -201,6 +202,7 @@
             border-bottom: 1px solid #cccccc;
             color: #333333;
             font-size: 16px;
+            text-align: center;
         }
     
         .table-container th {
@@ -276,6 +278,8 @@
                     <th>Number of Guests</th>
                     <th>Table ID</th>
                     <th>Status</th>
+                    <th>Time</th>
+                    <th>Date</th>
                     <th>Check In</th>
                 </tr>
             </thead>
@@ -287,6 +291,8 @@
                         <td>{{ row[2] }}</td>
                         <td>{{ row[3] | join(', ') }}</td>
                         <td>{{ row[4] }}</td>
+                        <td>{{ row[6] }} </td>
+                        <td>{{ row[7] }}</td>
                         <td>
                             <form action="/confirmCheckIn" method="POST" style="display:inline;">
                                 <input type="hidden" name="reservation_id" value="{{ row[5] }}">
